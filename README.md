@@ -12,7 +12,7 @@ This project is built to demonstrate practical AI engineering, not just prompt w
 - Evaluates context precision, context recall, faithfulness, citation support, unsupported claims, and refusal correctness.
 - Stores RAG traces with latency and token estimates.
 - Exposes the workflow through both a CLI and a FastAPI service.
-- Includes prompt regression coverage and a retrieval baseline notebook.
+- Includes prompt regression coverage and an analytical notebook suite (see below).
 
 ## Quickstart
 
@@ -48,6 +48,26 @@ Then use:
 - `POST /evaluate`
 - `GET /traces/{id}`
 - `GET /dashboard`
+
+## Notebooks
+
+The [`notebooks/`](notebooks/) suite is an analytical walkthrough of the system,
+built entirely on the package code (no notebook-only logic) and committed with
+executed outputs and figures so it renders on GitHub without being re-run.
+
+| Notebook | Focus |
+| --- | --- |
+| [`01_retrieval_baseline`](notebooks/01_retrieval_baseline.ipynb) | BM25 baseline, per-query score anatomy, and a `k1`×`b` parameter sweep |
+| [`02_retrieval_strategies`](notebooks/02_retrieval_strategies.ipynb) | Lexical vs vector vs hybrid: recall/MRR curves, a fusion-weight sweep, and per-question win/loss analysis |
+| [`03_grounded_generation`](notebooks/03_grounded_generation.ipynb) | Grounded prompting, citation validation, refusal guard-rails, and latency profiling |
+| [`04_rag_evaluation`](notebooks/04_rag_evaluation.ipynb) | End-to-end scoring, operational budgets, trace persistence, and a CI-style regression gate |
+
+They run against the bundled corpus and golden set with deterministic offline
+clients, so `poetry install --with dev` is the only prerequisite. To re-execute:
+
+```bash
+poetry run jupyter nbconvert --to notebook --execute --inplace notebooks/*.ipynb
+```
 
 ## Example API calls
 
