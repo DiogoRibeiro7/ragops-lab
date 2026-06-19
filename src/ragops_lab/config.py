@@ -17,8 +17,16 @@ class ProjectPaths(BaseModel):
     data_dir: Path = Field(default=Path("data"), description="Base data directory.")
     artifact_dir: Path = Field(default=Path("artifacts"), description="Generated artifacts.")
     model_dir: Path = Field(default=Path("models"), description="Trained model storage.")
+    trace_path: Path = Field(
+        default=Path("artifacts/traces/traces.jsonl"),
+        description="Trace storage path.",
+    )
+    chunk_path: Path = Field(
+        default=Path("data/processed/chunks.jsonl"),
+        description="Default chunk storage path.",
+    )
 
-    @field_validator("data_dir", "artifact_dir", "model_dir")
+    @field_validator("data_dir", "artifact_dir", "model_dir", "trace_path", "chunk_path")
     @classmethod
     def ensure_relative_or_absolute_path(cls, value: Path) -> Path:
         """Validate path-like fields.

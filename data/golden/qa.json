@@ -1,0 +1,10 @@
+[
+  {
+    "query": "Which Apollo mission first landed on the Moon?",
+    "relevant_chunk_ids": ["apollo-program:0"]
+  },
+  {
+    "query": "Which metrics are useful for RAG evaluation?",
+    "relevant_chunk_ids": ["rag-evaluation:0"]
+  }
+]
