@@ -36,14 +36,14 @@ ragops-lab = "ragops_lab.cli:app"
 packages = [{ include = "ragops_lab", from = "src" }]
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^9.0.3"
+pytest = "^9.1.1"
 pytest-cov = "^5.0.0"
 httpx2 = "^2.4.0"
 mypy = "^1.10.1"
-ruff = "^0.5.0"
+ruff = "^0.16.1"
 pre-commit = "^3.7.1"
 nbval = "^0.11.0"
-matplotlib = "^3.11.0"
+matplotlib = "^3.11.1"
 seaborn = "^0.13.2"
 
 [build-system]
