@@ -14,6 +14,7 @@ This project is built to demonstrate practical AI engineering, not just prompt w
 - CI runs linting, type checking, and tests on Python 3.11 and 3.12.
 - Licensed under MIT.
 - All versions DOI: [`10.5281/zenodo.21805398`](https://doi.org/10.5281/zenodo.21805398).
+- Release history is tracked in [`CHANGELOG.md`](CHANGELOG.md).
 
 ## What it does
 

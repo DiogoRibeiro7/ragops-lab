@@ -1,0 +1,50 @@
+# Changelog
+
+All notable changes to this project are documented in this file.
+
+The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [0.1.1] - 2026-08-05
+
+### Added
+
+- Added `CITATION.cff` for GitHub citation support.
+- Added the Zenodo all-versions DOI badge and citation reference to `README.md`.
+- Added the Zenodo all-versions DOI as a related identifier in `.zenodo.json`.
+
+### Changed
+
+- Bumped package, module, Zenodo, and citation metadata versions to `0.1.1`.
+
+## [0.1.0] - 2026-08-05
+
+### Added
+
+- Added the first public release of `ragops-lab`.
+- Added a reusable Python package with typed domain models for documents, chunks,
+  retrieval results, generated answers, evaluations, and traces.
+- Added ingestion for text, Markdown, CSV, and optional PDF extraction boundaries.
+- Added lexical, vector, and hybrid retrieval flows with retrieval evaluation
+  metrics.
+- Added evidence-grounded generation with citation validation and refusal
+  handling.
+- Added evaluation metrics for context quality, faithfulness, citation support,
+  relevance, and refusal correctness.
+- Added FastAPI service, Typer CLI, JSONL trace persistence, and a minimal trace
+  dashboard.
+- Added analytical notebooks covering retrieval baselines, retrieval strategy
+  comparison, grounded generation, and RAG evaluation.
+- Added CI, pre-commit hooks, issue templates, PR template, MIT license,
+  contribution guide, security policy, Docker hygiene, and Zenodo metadata.
+
+### Fixed
+
+- Fixed default vector retrieval by fitting the deterministic fake embedding
+  client vocabulary on indexed documents before query embedding.
+- Added explicit validation for unsupported chunking strategies.
+- Updated `GitPython` to a patched version to clear Dependabot advisories.
+- Fixed GitHub Actions and branch protection check naming for the Python matrix.
+
+[0.1.1]: https://github.com/DiogoRibeiro7/ragops-lab/compare/v0.1.0...v0.1.1
+[0.1.0]: https://github.com/DiogoRibeiro7/ragops-lab/releases/tag/v0.1.0
