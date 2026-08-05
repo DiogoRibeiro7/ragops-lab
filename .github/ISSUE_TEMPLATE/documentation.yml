@@ -1,0 +1,51 @@
+name: Documentation Issue
+description: Report missing, unclear, stale, or incorrect documentation.
+title: "[Docs]: "
+labels: ["documentation", "needs-triage"]
+body:
+  - type: dropdown
+    id: doc_area
+    attributes:
+      label: Documentation area
+      options:
+        - README
+        - Architecture docs
+        - Roadmap
+        - Contributing guide
+        - Security policy
+        - API usage
+        - CLI usage
+        - Notebook walkthrough
+        - Inline code documentation
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: location
+    attributes:
+      label: Location
+      description: Link, file path, heading, or command output.
+      placeholder: "README.md#quickstart"
+    validations:
+      required: false
+  - type: textarea
+    id: issue
+    attributes:
+      label: Issue
+      placeholder: What is unclear, missing, stale, or incorrect?
+    validations:
+      required: true
+  - type: textarea
+    id: suggested_change
+    attributes:
+      label: Suggested change
+      placeholder: Suggest wording, examples, links, or structure.
+    validations:
+      required: false
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission checks
+      options:
+        - label: I searched existing issues and did not find a duplicate.
+          required: true

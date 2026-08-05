@@ -1,0 +1,65 @@
+name: Feature Request
+description: Propose a new capability or improvement.
+title: "[Feature]: "
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this for concrete product, API, CLI, evaluation, or developer-experience improvements.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Ingestion
+        - Retrieval
+        - Generation
+        - Evaluation
+        - Tracing
+        - CLI
+        - API
+        - Notebooks
+        - Docker/deployment
+        - CI/tooling
+        - Documentation
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or opportunity
+      description: What workflow, user need, or technical gap does this address?
+      placeholder: Describe the current limitation.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      placeholder: Describe the behavior, API, command, output, or documentation you want.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      placeholder: What other approaches did you consider?
+    validations:
+      required: false
+  - type: textarea
+    id: success
+    attributes:
+      label: Success criteria
+      placeholder: How should maintainers know this is complete?
+    validations:
+      required: false
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission checks
+      options:
+        - label: I searched existing issues and did not find a duplicate.
+          required: true
+        - label: This request fits the repository goal of evaluation-first RAG and LLMOps.
+          required: true

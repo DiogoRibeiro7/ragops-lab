@@ -1,0 +1,50 @@
+name: Question
+description: Ask a usage, design, or implementation question.
+title: "[Question]: "
+labels: ["question", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this for focused questions about the project. For security-sensitive issues, use the private security advisory flow.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Topic
+      options:
+        - Setup
+        - CLI usage
+        - API usage
+        - Retrieval behavior
+        - Evaluation metrics
+        - Notebook usage
+        - Docker/deployment
+        - Architecture
+        - Contribution workflow
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      placeholder: What are you trying to understand or accomplish?
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Include commands, payloads, docs you checked, or constraints.
+      placeholder: "I ran `...` and read `...`."
+    validations:
+      required: false
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission checks
+      options:
+        - label: I searched existing issues and did not find a duplicate.
+          required: true
+        - label: I checked the README and relevant docs first.
+          required: true
