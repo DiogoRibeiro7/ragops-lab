@@ -41,6 +41,10 @@ current version and Zenodo concept DOI.
 
 5. Confirm GitHub CI passes on `main`.
 
+Dependency updates are managed by Dependabot through `.github/dependabot.yml`.
+Before merging dependency update pull requests, confirm the CI matrix passes and
+run `make release-check` locally for release-affecting changes.
+
 ## Create the Release
 
 Create an annotated tag and publish the GitHub release:
