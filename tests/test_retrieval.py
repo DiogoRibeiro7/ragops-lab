@@ -50,6 +50,14 @@ def test_lexical_vector_and_hybrid_retrieval_rank_expected_chunk() -> None:
     assert hybrid.search("moon mission", top_k=1)[0].chunk.chunk_id == "apollo:0"
 
 
+def test_fake_embedding_client_reuses_document_vocabulary_for_queries() -> None:
+    vector = VectorRetriever(_chunks(), FakeEmbeddingClient())
+
+    results = vector.search("citation support", top_k=1)
+
+    assert results[0].chunk.chunk_id == "metrics:0"
+
+
 def test_retrieval_evaluation_computes_recall_and_mrr() -> None:
     report = evaluate_retrieval(
         BM25Retriever(_chunks()),

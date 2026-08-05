@@ -29,6 +29,9 @@ class ChunkingConfig:
     strategy: str = "chars"
 
 
+SUPPORTED_CHUNKING_STRATEGIES = frozenset({"chars"})
+
+
 def slugify(value: str) -> str:
     """Create stable ASCII-ish identifiers from filenames."""
     normalized = "".join(character.lower() if character.isalnum() else "-" for character in value)
@@ -95,6 +98,11 @@ def chunk_document(document: Document, config: ChunkingConfig | None = None) -> 
         raise ValueError("chunk_size must be positive.")
     if chunking.overlap < 0 or chunking.overlap >= chunking.chunk_size:
         raise ValueError("overlap must be non-negative and smaller than chunk_size.")
+    if chunking.strategy not in SUPPORTED_CHUNKING_STRATEGIES:
+        supported = ", ".join(sorted(SUPPORTED_CHUNKING_STRATEGIES))
+        raise ValueError(
+            f"Unsupported chunking strategy: {chunking.strategy}. Supported: {supported}."
+        )
 
     text = document.text
     step = chunking.chunk_size - chunking.overlap

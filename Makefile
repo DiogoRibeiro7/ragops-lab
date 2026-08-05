@@ -1,4 +1,4 @@
-.PHONY: install lint typecheck test format run
+.PHONY: install lint typecheck test format check pre-commit run
 
 install:
 	poetry install --with dev
@@ -14,6 +14,11 @@ test:
 
 format:
 	poetry run ruff format .
+
+check: lint typecheck test
+
+pre-commit:
+	poetry run pre-commit run --all-files
 
 run:
 	poetry run python -m ragops_lab.cli

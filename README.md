@@ -4,6 +4,14 @@ Evaluation-first RAG and LLMOps platform for production-grade document question 
 
 This project is built to demonstrate practical AI engineering, not just prompt wiring. It focuses on ingestion, retrieval quality, grounded generation, measurable evaluation, and traceability through a reusable Python package, CLI, API, tests, and sample assets.
 
+## Repository status
+
+- Python package under `src/` with typed domain models and service boundaries.
+- CLI and FastAPI entrypoints.
+- Deterministic offline defaults; no model API keys are required for the main demo path.
+- CI runs linting, type checking, and tests on Python 3.11 and 3.12.
+- Licensed under MIT.
+
 ## What it does
 
 - Ingests `.txt`, `.md`, `.csv`, and optionally `.pdf` documents into reusable chunks.
@@ -17,6 +25,8 @@ This project is built to demonstrate practical AI engineering, not just prompt w
 ## Quickstart
 
 ### 1. Install
+
+Requires Python 3.11 or 3.12 and Poetry.
 
 ```bash
 poetry install --with dev
@@ -34,6 +44,12 @@ poetry run python -m ragops_lab.cli ingest data/sample_documents --out data/proc
 poetry run python -m ragops_lab.cli ask "Which Apollo mission first landed on the Moon?" --chunks data/processed/chunks.jsonl
 ```
 
+You can also use the installed console script:
+
+```bash
+poetry run ragops-lab ask "Which Apollo mission first landed on the Moon?" --chunks data/processed/chunks.jsonl
+```
+
 ### 4. Run the API
 
 ```bash
@@ -48,6 +64,14 @@ Then use:
 - `POST /evaluate`
 - `GET /traces/{id}`
 - `GET /dashboard`
+
+### 5. Run with Docker
+
+```bash
+docker compose up --build
+```
+
+The API is served at `http://localhost:8000`.
 
 ## Notebooks
 
@@ -102,7 +126,7 @@ Raw documents
   -> CLI / API / dashboard
 ```
 
-The design principle is evaluation-first development: every generated answer should be linked to retrieved evidence, validated for citations, and measurable through explicit metrics.
+The design principle is evaluation-first development: every generated answer should be linked to retrieved evidence, validated for citations, and measurable through explicit metrics. See [`docs/architecture.md`](docs/architecture.md) for more detail.
 
 ## Project structure
 
@@ -124,19 +148,25 @@ notebooks/                  Notebook demos built on package code
 ## Quality checks
 
 ```bash
-poetry run ruff check .
-poetry run mypy src
-poetry run pytest -q
+make check
 ```
 
-Or via `make`:
+Or run individual gates:
 
 ```bash
-make install
 make lint
 make typecheck
 make test
 ```
+
+Pre-commit hooks are available:
+
+```bash
+poetry run pre-commit install
+poetry run pre-commit run --all-files
+```
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for contribution guidelines and [`SECURITY.md`](SECURITY.md) for vulnerability reporting.
 
 ## Notes
 

@@ -18,26 +18,22 @@ The repository includes a working local MVP with:
 - local trace persistence and a minimal dashboard
 - an analytical notebook suite (retrieval tuning, strategy comparison, grounded generation, end-to-end evaluation) built on package code, committed with executed outputs and figures
 - automated linting, type-checking, and test coverage (~90%)
+- CI coverage across Python 3.11 and 3.12
+
+## Recently completed
+
+- Fixed default `FakeEmbeddingClient` behavior so document and query vectors
+  share the same fitted vocabulary.
+- Added validation for unsupported chunking strategies instead of silently
+  ignoring `ChunkingConfig.strategy`.
+- Added professional repository hygiene: license, contribution guide, security
+  policy, pre-commit hooks, Docker build hygiene, and improved CI.
 
 ## Known issues and bugs
 
 These are confirmed defects with concrete reproduction paths. They should be
 fixed before the behaviours they affect are relied on.
 
-- **`FakeEmbeddingClient` returns all-zero similarities by default.** When
-  constructed without an explicit `vocabulary`, `embed_texts` builds its
-  vocabulary from the corpus while `embed_query` builds a separate one from the
-  query alone. The two vectors then have different lengths, so
-  `cosine_similarity` hits its length-mismatch guard and returns `0.0` for every
-  pair — `VectorRetriever(chunks, FakeEmbeddingClient())` retrieves nothing.
-  *Fix:* derive a shared vocabulary at construction time (fit once over the
-  corpus), or move to a fixed-dimension hashing embedder so query and document
-  vectors are always aligned.
-- **`ChunkingConfig.strategy` is silently ignored.** `chunk_document` only reads
-  `chunk_size` and `overlap`; the `strategy` field (default `"chars"`) has no
-  effect, so a caller requesting token- or sentence-aware chunking still gets
-  character splitting with no error. *Fix:* either implement the token and
-  semantic strategies or validate and reject unsupported values.
 - **Chunking splits mid-word and mid-sentence.** Fixed-width character chunking
   cuts tokens in half at boundaries (e.g. `onstrain the model...`), which
   pollutes lexical term matches and embeddings near the seams. *Fix:* snap chunk
@@ -114,11 +110,9 @@ fixed before the behaviours they affect are relied on.
 
 ## Near-term priorities
 
-1. Fix the `FakeEmbeddingClient` shared-vocabulary bug and the ignored
-   `ChunkingConfig.strategy` field — both are silent correctness defects.
-2. Finish CI-backed evaluation regression checks and artifact publishing, and
+1. Finish CI-backed evaluation regression checks and artifact publishing, and
    run the notebooks under `nbval` in CI.
-3. Harden API safety limits and runtime configuration.
-4. Add persistent retrieval storage instead of relying on in-memory indexing.
-5. Wire real embedding and LLM providers into the CLI and API defaults behind
+2. Harden API safety limits and runtime configuration.
+3. Add persistent retrieval storage instead of relying on in-memory indexing.
+4. Wire real embedding and LLM providers into the CLI and API defaults behind
    the existing abstractions.
