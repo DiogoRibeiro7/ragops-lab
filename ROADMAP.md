@@ -1,43 +1,118 @@
 # Roadmap
 
-## Phase 1 — Foundation
+This roadmap tracks the product and engineering direction for `ragops-lab` as an
+evaluation-first RAG and LLMOps platform. It is organised as: current state,
+known issues and bugs, milestones, planned features, and near-term priorities.
 
-- Define data models for documents, chunks, retrieval results, generated answers, and evaluations.
-- Create CLI for ingestion and question answering.
+## Current state
 
-## Phase 2 — Ingestion
+The repository includes a working local MVP with:
 
-- Support Markdown, text, PDF placeholder adapter, and CSV metadata.
-- Implement chunking strategies.
-- Store normalized documents and chunks.
+- typed domain models for documents, chunks, retrieval results, generated answers, evaluations, and traces
+- reusable ingestion for text, markdown, csv, and optional pdf adapters
+- lexical, vector, and hybrid retrieval flows
+- grounded answer generation with citation validation and refusal handling
+- evaluation metrics (context precision/recall, faithfulness, citation support, answer relevance, refusal correctness) and report export
+- CLI commands for ingestion and question answering
+- FastAPI endpoints for ingestion, retrieval, answering, evaluation, and trace lookup
+- local trace persistence and a minimal dashboard
+- an analytical notebook suite (retrieval tuning, strategy comparison, grounded generation, end-to-end evaluation) built on package code, committed with executed outputs and figures
+- automated linting, type-checking, and test coverage (~90%)
+- CI coverage across Python 3.11 and 3.12
 
-## Phase 3 — Retrieval
+## Recently completed
 
-- Implement BM25 baseline.
-- Add vector retrieval adapter.
-- Add hybrid reranking.
-- Add retrieval evaluation datasets.
+- Fixed default `FakeEmbeddingClient` behavior so document and query vectors
+  share the same fitted vocabulary.
+- Added validation for unsupported chunking strategies instead of silently
+  ignoring `ChunkingConfig.strategy`.
+- Added professional repository hygiene: license, contribution guide, security
+  policy, pre-commit hooks, Docker build hygiene, and improved CI.
 
-## Phase 4 — Generation
+## Known issues and bugs
 
-- Add provider-agnostic LLM client.
-- Add answer generation with evidence constraints.
-- Add citation validation.
+These are confirmed defects with concrete reproduction paths. They should be
+fixed before the behaviours they affect are relied on.
 
-## Phase 5 — Evaluation
+- **Chunking splits mid-word and mid-sentence.** Fixed-width character chunking
+  cuts tokens in half at boundaries (e.g. `onstrain the model...`), which
+  pollutes lexical term matches and embeddings near the seams. *Fix:* snap chunk
+  boundaries to word or sentence limits.
+- **`OverlapJudge` answer-relevance is a weak proxy.** It scores how many query
+  terms reappear in the answer, which yields structurally low values and is not
+  safe to use as a quality gate (only as a trend signal). *Fix:* add a
+  model-based or embedding-based relevance judge behind the existing
+  `RelevanceJudge` protocol.
+- **Faithfulness uses lexical subset matching.** `unsupported_claim_count`
+  flags a claim as unsupported unless its tokens are a strict subset of the
+  evidence tokens, which is brittle to paraphrase and stopwords. *Fix:* move to
+  claim-level entailment via embeddings or an LLM judge.
 
-- Implement automatic metrics.
-- Add golden dataset support.
-- Add prompt regression test suite.
+## Milestone 1 — Complete the evaluation pipeline
 
-## Phase 6 — API and observability
+- Add a dedicated CI job for regression-style RAG evaluation (the notebook 04
+  gate logic, lifted into a runnable script).
+- Enforce failure thresholds for faithfulness and citation support.
+- Persist evaluation outputs to `artifacts/evaluation`.
+- Upload evaluation artifacts from CI for inspection.
+- Execute the notebooks in CI with `nbval` (already a dev dependency) so they
+  cannot silently rot.
+- Add clearer reporting for retrieval metrics and answer-quality metrics.
 
-- Add FastAPI service.
-- Store traces, latency, and cost estimates.
-- Add dashboard.
+## Milestone 2 — Strengthen runtime and API behavior
 
-## Phase 7 — Deployment
+- Add request-size and payload-size guards to the API surface.
+- Make runtime paths and storage locations configurable through environment settings.
+- Improve error responses and validation messages across API and CLI entrypoints.
+- Add better trace summaries, filtering, and inspection views in the dashboard.
 
-- Add Docker Compose.
-- Add local vector store.
-- Add CI checks for prompt regressions.
+## Milestone 3 — Move beyond in-memory retrieval
+
+- Add a persistent local vector store for embeddings.
+- Add indexing and reload flows for processed documents and chunks.
+- Separate retrieval configuration from runtime execution paths.
+- Support configurable retrieval profiles for lexical, vector, and hybrid search.
+
+## Milestone 4 — Improve generation and evaluation depth
+
+- Add provider-backed LLM and embedding integrations behind the existing
+  abstractions (the `SentenceTransformerEmbeddingClient` adapter exists but is
+  not wired into the CLI or API defaults).
+- Add stronger claim extraction and evidence matching for faithfulness checks.
+- Add dataset-oriented evaluation commands for repeated benchmark runs.
+- Expand refusal evaluation for unanswerable and weak-context cases.
+
+## Milestone 5 — Product and deployment polish
+
+- Improve the dashboard into a more useful inspection surface for traces and metrics.
+- Add richer API usage documentation and example payloads.
+- Add release notes and a first tagged release from `main`.
+- Add deployment guidance for local demos and portfolio presentation.
+
+## Planned features
+
+- **Reranking stage.** Add a cross-encoder reranker behind a `Reranker` protocol
+  and a retrieve-then-rerank path, so the candidate set can be widened cheaply
+  and reordered for precision.
+- **Reciprocal Rank Fusion.** Offer RRF as an alternative to weighted score
+  fusion in `HybridRetriever`, removing the need to calibrate score scales.
+- **Token- and sentence-aware chunking.** Implement the chunking strategies the
+  config already advertises, with boundary snapping.
+- **Model-as-judge evaluation.** Pluggable LLM judges for relevance and
+  faithfulness, with the deterministic lexical judges kept as the offline path.
+- **Cost and latency budgets.** Track token and latency distributions per
+  request and fail evaluation when p95 budgets are breached, not just on quality.
+- **Golden-set tooling.** A small command to (re)build the golden set by
+  resolving answer phrases to current chunk ids, keeping fixtures in sync with
+  the chunker.
+- **Dataset versioning.** Record the chunking config and corpus hash alongside
+  evaluation artifacts so results are reproducible and comparable across runs.
+
+## Near-term priorities
+
+1. Finish CI-backed evaluation regression checks and artifact publishing, and
+   run the notebooks under `nbval` in CI.
+2. Harden API safety limits and runtime configuration.
+3. Add persistent retrieval storage instead of relying on in-memory indexing.
+4. Wire real embedding and LLM providers into the CLI and API defaults behind
+   the existing abstractions.

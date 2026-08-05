@@ -1,0 +1,32 @@
+{
+  "title": "ragops-lab",
+  "description": "Evaluation-first RAG and LLMOps platform for production-grade document question answering.",
+  "version": "0.1.0",
+  "access_right": "open",
+  "license": "mit",
+  "creators": [
+    {
+      "name": "Diogo Ribeiro",
+      "affiliation": "ESMAD - School of Media Arts and Design, Polytechnic of Porto",
+      "orcid": "0009-0001-2022-7072"
+    }
+  ],
+  "contributors": [
+    {
+      "name": "Diogo Ribeiro",
+      "affiliation": "ESMAD - School of Media Arts and Design, Polytechnic of Porto",
+      "orcid": "0009-0001-2022-7072",
+      "type": "ContactPerson"
+    }
+  ],
+  "keywords": [
+    "RAG",
+    "LLMOps",
+    "retrieval",
+    "evaluation",
+    "FastAPI"
+  ],
+  "upload_type": "software",
+  "language": "eng",
+  "notes": "Contact: dfr@esmad.ipp.pt"
+}

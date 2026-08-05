@@ -49,6 +49,8 @@ class FakeEmbeddingClient:
 
     def embed_texts(self, texts: list[str]) -> list[list[float]]:
         vocabulary = self._build_vocabulary(texts)
+        if not self.vocabulary:
+            self.vocabulary = vocabulary
         return [self._embed_with_vocabulary(text, vocabulary) for text in texts]
 
     def embed_query(self, query: str) -> list[float]:

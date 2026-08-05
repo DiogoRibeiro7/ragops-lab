@@ -1,10 +1,99 @@
 [
   {
-    "query": "Which Apollo mission first landed on the Moon?",
-    "relevant_chunk_ids": ["apollo-program:0"]
+    "query": "What does the BM25 k1 parameter control?",
+    "relevant_chunk_ids": [
+      "lexical-retrieval:1"
+    ]
   },
   {
-    "query": "Which metrics are useful for RAG evaluation?",
-    "relevant_chunk_ids": ["rag-evaluation:0"]
+    "query": "What are common default values for BM25 k1 and b?",
+    "relevant_chunk_ids": [
+      "lexical-retrieval:1",
+      "lexical-retrieval:2"
+    ]
+  },
+  {
+    "query": "What is the main weakness of lexical retrieval?",
+    "relevant_chunk_ids": [
+      "lexical-retrieval:2"
+    ]
+  },
+  {
+    "query": "Which similarity metric is standard for comparing embeddings?",
+    "relevant_chunk_ids": [
+      "vector-retrieval:0"
+    ]
+  },
+  {
+    "query": "Why do vector systems use approximate nearest neighbour search?",
+    "relevant_chunk_ids": [
+      "vector-retrieval:1"
+    ]
+  },
+  {
+    "query": "How does the alpha weight blend scores in hybrid retrieval?",
+    "relevant_chunk_ids": [
+      "hybrid-retrieval:1"
+    ]
+  },
+  {
+    "query": "What is Reciprocal Rank Fusion?",
+    "relevant_chunk_ids": [
+      "hybrid-retrieval:2"
+    ]
+  },
+  {
+    "query": "What is the trade-off between small and large chunks?",
+    "relevant_chunk_ids": [
+      "chunking-strategies:0"
+    ]
+  },
+  {
+    "query": "Why is overlap used when chunking documents?",
+    "relevant_chunk_ids": [
+      "chunking-strategies:1"
+    ]
+  },
+  {
+    "query": "What does recall at k measure?",
+    "relevant_chunk_ids": [
+      "rag-evaluation:0"
+    ]
+  },
+  {
+    "query": "What does faithfulness measure in a RAG answer?",
+    "relevant_chunk_ids": [
+      "rag-evaluation:2"
+    ]
+  },
+  {
+    "query": "What is a hallucination?",
+    "relevant_chunk_ids": [
+      "faithfulness-grounding:1"
+    ]
+  },
+  {
+    "query": "Which architecture dominates reranking?",
+    "relevant_chunk_ids": [
+      "reranking:0"
+    ]
+  },
+  {
+    "query": "What does a trace record in an LLMOps system?",
+    "relevant_chunk_ids": [
+      "llmops-observability:0"
+    ]
+  },
+  {
+    "query": "What should a grounding system instruction tell the model?",
+    "relevant_chunk_ids": [
+      "prompt-design:1"
+    ]
+  },
+  {
+    "query": "Why ask the model to return structured JSON output?",
+    "relevant_chunk_ids": [
+      "prompt-design:2"
+    ]
   }
 ]

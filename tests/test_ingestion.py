@@ -3,9 +3,12 @@ from __future__ import annotations
 import csv
 from pathlib import Path
 
+import pytest
 from ragops_lab.cli import app
+from ragops_lab.domain import Document
 from ragops_lab.ingestion import (
     ChunkingConfig,
+    chunk_document,
     discover_documents,
     ingest_directory,
     load_chunks_jsonl,
@@ -42,3 +45,14 @@ def test_cli_ingest_writes_chunks(tmp_path: Path) -> None:
 
     assert result.exit_code == 0
     assert output_path.exists()
+
+
+def test_chunk_document_rejects_unsupported_strategy() -> None:
+    document = Document(
+        document_id="doc",
+        title="Doc",
+        text="A short document about RAG metrics.",
+    )
+
+    with pytest.raises(ValueError, match="Unsupported chunking strategy"):
+        chunk_document(document, ChunkingConfig(strategy="tokens"))

@@ -16,7 +16,7 @@ from ragops_lab.retrieval import BM25Retriever
 def test_prompt_regression_thresholds(tmp_path: Path) -> None:
     source_dir = Path("data/sample_documents")
     chunks_path = tmp_path / "chunks.jsonl"
-    chunks = ingest_directory(source_dir, chunks_path, ChunkingConfig(chunk_size=220, overlap=20))
+    chunks = ingest_directory(source_dir, chunks_path, ChunkingConfig(chunk_size=400, overlap=60))
     golden = json.loads(Path("data/golden/qa.json").read_text(encoding="utf-8"))
     chunk_ids = {chunk.chunk_id for chunk in chunks}
 
