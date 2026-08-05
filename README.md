@@ -1,5 +1,9 @@
 # ragops-lab
 
+[![CI](https://github.com/DiogoRibeiro7/ragops-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/DiogoRibeiro7/ragops-lab/actions/workflows/ci.yml)
+[![GitHub release](https://img.shields.io/github/v/release/DiogoRibeiro7/ragops-lab)](https://github.com/DiogoRibeiro7/ragops-lab/releases)
+[![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12-blue)](pyproject.toml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21805398.svg)](https://doi.org/10.5281/zenodo.21805398)
 
 Evaluation-first RAG and LLMOps platform for production-grade document question answering.
