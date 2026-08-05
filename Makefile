@@ -1,4 +1,4 @@
-.PHONY: install lint typecheck test format check pre-commit run
+.PHONY: install lint typecheck test format check release-check pre-commit run
 
 install:
 	poetry install --with dev
@@ -16,6 +16,9 @@ format:
 	poetry run ruff format .
 
 check: lint typecheck test
+
+release-check: check pre-commit
+	poetry check
 
 pre-commit:
 	poetry run pre-commit run --all-files

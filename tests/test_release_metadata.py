@@ -19,9 +19,7 @@ RELEASE_TITLE = (
 def test_release_metadata_versions_are_consistent() -> None:
     pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     zenodo = json.loads((ROOT / ".zenodo.json").read_text(encoding="utf-8"))
-    citation: dict[str, Any] = yaml.safe_load(
-        (ROOT / "CITATION.cff").read_text(encoding="utf-8")
-    )
+    citation: dict[str, Any] = yaml.safe_load((ROOT / "CITATION.cff").read_text(encoding="utf-8"))
     changelog = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
 
     version = pyproject["project"]["version"]
@@ -39,9 +37,7 @@ def test_release_metadata_versions_are_consistent() -> None:
 def test_release_metadata_title_and_description_are_consistent() -> None:
     pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     zenodo = json.loads((ROOT / ".zenodo.json").read_text(encoding="utf-8"))
-    citation: dict[str, Any] = yaml.safe_load(
-        (ROOT / "CITATION.cff").read_text(encoding="utf-8")
-    )
+    citation: dict[str, Any] = yaml.safe_load((ROOT / "CITATION.cff").read_text(encoding="utf-8"))
 
     assert zenodo["title"] == RELEASE_TITLE
     assert citation["title"] == RELEASE_TITLE
@@ -51,9 +47,7 @@ def test_release_metadata_title_and_description_are_consistent() -> None:
 
 def test_release_metadata_uses_zenodo_concept_doi() -> None:
     zenodo = json.loads((ROOT / ".zenodo.json").read_text(encoding="utf-8"))
-    citation: dict[str, Any] = yaml.safe_load(
-        (ROOT / "CITATION.cff").read_text(encoding="utf-8")
-    )
+    citation: dict[str, Any] = yaml.safe_load((ROOT / "CITATION.cff").read_text(encoding="utf-8"))
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
 
     related_identifiers = {

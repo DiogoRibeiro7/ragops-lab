@@ -16,9 +16,7 @@ poetry run pre-commit install
 Run the same checks used in CI before opening a pull request:
 
 ```bash
-make lint
-make typecheck
-make test
+make check
 ```
 
 For targeted iteration:
@@ -41,6 +39,8 @@ poetry run mypy src
   the output is a deliberate fixture or documentation asset.
 - Update `README.md`, `docs/architecture.md`, or `ROADMAP.md` when behavior,
   architecture, or project priorities change.
+- Follow [`docs/release.md`](docs/release.md) for version bumps, tags, GitHub
+  releases, and Zenodo metadata.
 
 ## Pull Request Checklist
 
