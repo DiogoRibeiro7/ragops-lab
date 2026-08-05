@@ -1,7 +1,7 @@
 {
   "title": "ragops-lab",
   "description": "Evaluation-first RAG and LLMOps platform for production-grade document question answering.",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "access_right": "open",
   "license": "mit",
   "creators": [
