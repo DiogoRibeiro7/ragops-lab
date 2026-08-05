@@ -1,5 +1,7 @@
 # ragops-lab
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21805398.svg)](https://doi.org/10.5281/zenodo.21805398)
+
 Evaluation-first RAG and LLMOps platform for production-grade document question answering.
 
 This project is built to demonstrate practical AI engineering, not just prompt wiring. It focuses on ingestion, retrieval quality, grounded generation, measurable evaluation, and traceability through a reusable Python package, CLI, API, tests, and sample assets.
@@ -11,6 +13,7 @@ This project is built to demonstrate practical AI engineering, not just prompt w
 - Deterministic offline defaults; no model API keys are required for the main demo path.
 - CI runs linting, type checking, and tests on Python 3.11 and 3.12.
 - Licensed under MIT.
+- All versions DOI: [`10.5281/zenodo.21805398`](https://doi.org/10.5281/zenodo.21805398).
 
 ## What it does
 

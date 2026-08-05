@@ -26,6 +26,13 @@
     "evaluation",
     "FastAPI"
   ],
+  "related_identifiers": [
+    {
+      "identifier": "10.5281/zenodo.21805398",
+      "relation": "isVersionOf",
+      "resource_type": "software"
+    }
+  ],
   "upload_type": "software",
   "language": "eng",
   "notes": "Contact: dfr@esmad.ipp.pt"
