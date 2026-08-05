@@ -1,7 +1,7 @@
 [project]
 name = "ragops-lab"
-version = "0.1.2"
-description = "Evaluation-first RAG and LLMOps platform."
+version = "0.1.3"
+description = "RAGOps Lab is an open-source software project for building, testing, and observing retrieval-augmented generation systems."
 authors = [{ name = "Diogo Ribeiro", email = "hansolo.dj@gmail.com" }]
 readme = "README.md"
 license = "MIT"

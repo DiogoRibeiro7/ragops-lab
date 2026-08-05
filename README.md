@@ -6,7 +6,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21805398.svg)](https://doi.org/10.5281/zenodo.21805398)
 
-Evaluation-first RAG and LLMOps platform for production-grade document question answering.
+RAGOps Lab is an open-source software project for building, testing, and observing retrieval-augmented generation systems.
 
 This project is built to demonstrate practical AI engineering, not just prompt wiring. It focuses on ingestion, retrieval quality, grounded generation, measurable evaluation, and traceability through a reusable Python package, CLI, API, tests, and sample assets.
 
