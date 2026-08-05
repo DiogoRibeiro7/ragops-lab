@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it using the metadata from this file."
 title: "RAGOps Lab: An Evaluation-First Platform for Retrieval-Augmented Generation Operations"
-version: "0.1.3"
+version: "0.1.4"
 doi: 10.5281/zenodo.21805398
 date-released: 2026-08-05
 license: MIT
