@@ -4,11 +4,12 @@ import json
 from pathlib import Path
 
 import pytest
+from typer.testing import CliRunner
+
 from ragops_lab.cli import app
 from ragops_lab.domain import DocumentChunk, RetrievalResult
 from ragops_lab.generation import FakeLLMClient, GenerationService
 from ragops_lab.ingestion import save_chunks_jsonl
-from typer.testing import CliRunner
 
 
 def _results() -> list[RetrievalResult]:

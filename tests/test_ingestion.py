@@ -4,6 +4,8 @@ import csv
 from pathlib import Path
 
 import pytest
+from typer.testing import CliRunner
+
 from ragops_lab.cli import app
 from ragops_lab.domain import Document
 from ragops_lab.ingestion import (
@@ -13,7 +15,6 @@ from ragops_lab.ingestion import (
     ingest_directory,
     load_chunks_jsonl,
 )
-from typer.testing import CliRunner
 
 
 def test_ingestion_supports_text_markdown_and_csv(tmp_path: Path) -> None:

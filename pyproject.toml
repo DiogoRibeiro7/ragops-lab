@@ -36,14 +36,14 @@ ragops-lab = "ragops_lab.cli:app"
 packages = [{ include = "ragops_lab", from = "src" }]
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^9.0.3"
+pytest = "^9.1.1"
 pytest-cov = "^7.1.0"
 httpx2 = "^2.4.0"
 mypy = "^2.3.0"
-ruff = "^0.5.0"
+ruff = "^0.16.1"
 pre-commit = "^4.6.1"
 nbval = "^0.11.0"
-matplotlib = "^3.11.0"
+matplotlib = "^3.11.1"
 seaborn = "^0.13.2"
 
 [build-system]
@@ -53,10 +53,11 @@ build-backend = "poetry.core.masonry.api"
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+extend-exclude = ["notebooks"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "N", "ANN", "S", "C4", "SIM"]
-ignore = ["ANN101", "ANN102", "S101"]
+ignore = ["S101"]
 
 [tool.mypy]
 python_version = "3.11"
