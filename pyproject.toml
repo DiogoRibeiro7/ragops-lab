@@ -1,6 +1,6 @@
 [project]
 name = "ragops-lab"
-version = "0.1.0"
+version = "0.1.1"
 description = "Evaluation-first RAG and LLMOps platform."
 authors = [{ name = "Diogo Ribeiro", email = "hansolo.dj@gmail.com" }]
 readme = "README.md"
