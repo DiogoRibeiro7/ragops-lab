@@ -176,6 +176,23 @@ the bundled golden set and writes JSON, CSV, and Markdown reports to
 `make notebook-check` executes the committed notebooks with `nbval` so notebook
 examples stay aligned with the package code.
 
+## Runtime Configuration
+
+The API and CLI use local defaults, but runtime paths and API safety limits can
+be overridden with environment variables:
+
+| Variable | Default |
+| --- | --- |
+| `RAGOPS_DATA_DIR` | `data` |
+| `RAGOPS_ARTIFACT_DIR` | `artifacts` |
+| `RAGOPS_MODEL_DIR` | `models` |
+| `RAGOPS_CHUNK_PATH` | `data/processed/chunks.jsonl` |
+| `RAGOPS_TRACE_PATH` | `artifacts/traces/traces.jsonl` |
+| `RAGOPS_API_MAX_REQUEST_BYTES` | `1000000` |
+| `RAGOPS_API_MAX_TOP_K` | `20` |
+| `RAGOPS_API_MAX_QUERY_CHARS` | `1000` |
+| `RAGOPS_API_MAX_TEXT_CHARS` | `20000` |
+
 Pre-commit hooks are available:
 
 ```bash

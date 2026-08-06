@@ -22,6 +22,7 @@ The repository includes a working local MVP with:
 - CI-backed deterministic RAG evaluation regression checks with persisted
   artifacts
 - notebook execution checks in CI with `nbval`
+- configurable runtime paths and API request safety limits
 
 ## Recently completed
 
@@ -35,6 +36,9 @@ The repository includes a working local MVP with:
   citation-support thresholds, JSON/CSV/Markdown artifacts, and CI artifact
   upload.
 - Added notebook execution checks in CI with `nbval`.
+- Added environment-backed runtime settings for data, artifact, chunk, trace,
+  and model paths.
+- Added API request-size, query-length, text-length, and `top_k` guards.
 
 ## Known issues and bugs
 
@@ -68,8 +72,8 @@ fixed before the behaviours they affect are relied on.
 
 ## Milestone 2 — Strengthen runtime and API behavior
 
-- Add request-size and payload-size guards to the API surface.
-- Make runtime paths and storage locations configurable through environment settings.
+- [x] Add request-size and payload-size guards to the API surface.
+- [x] Make runtime paths and storage locations configurable through environment settings.
 - Improve error responses and validation messages across API and CLI entrypoints.
 - Add better trace summaries, filtering, and inspection views in the dashboard.
 

@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 import uuid
+from collections.abc import Awaitable, Callable
 from pathlib import Path
 from time import perf_counter
 
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import HTMLResponse
-from pydantic import BaseModel, Field
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import HTMLResponse, JSONResponse, Response
+from pydantic import BaseModel, Field, field_validator
 
+from ragops_lab import __version__
+from ragops_lab.config import RuntimeSettings
 from ragops_lab.domain import RagTrace, RetrievalResult
 from ragops_lab.evaluation import evaluate_answer
 from ragops_lab.generation import GenerationService, HeuristicLLMClient
@@ -22,25 +25,92 @@ from ragops_lab.retrieval import (
 )
 from ragops_lab.tracing import JsonlTraceStore
 
-app = FastAPI(title="RAGOps Lab API", version="0.1.0")
+SETTINGS = RuntimeSettings.from_env()
+
+app = FastAPI(title="RAGOps Lab API", version=__version__)
+
+
+@app.middleware("http")
+async def enforce_request_size(
+    request: Request,
+    call_next: Callable[[Request], Awaitable[Response]],
+) -> Response:
+    """Reject request bodies above the configured API limit."""
+    content_length = request.headers.get("content-length")
+    if content_length is not None:
+        try:
+            declared_size = int(content_length)
+        except ValueError:
+            return JSONResponse(
+                status_code=400,
+                content={"detail": "Invalid Content-Length header."},
+            )
+        if declared_size > SETTINGS.api_max_request_bytes:
+            return JSONResponse(
+                status_code=413,
+                content={
+                    "detail": (
+                        "Request body is too large. "
+                        f"Maximum size is {SETTINGS.api_max_request_bytes} bytes."
+                    )
+                },
+            )
+    body = await request.body()
+    if len(body) > SETTINGS.api_max_request_bytes:
+        return JSONResponse(
+            status_code=413,
+            content={
+                "detail": (
+                    "Request body is too large. "
+                    f"Maximum size is {SETTINGS.api_max_request_bytes} bytes."
+                )
+            },
+        )
+    return await call_next(request)
 
 
 class IngestRequest(BaseModel):
     """Request body for ingestion."""
 
-    input_dir: str = Field(default="data/raw")
-    out_path: str = Field(default="data/processed/chunks.jsonl")
+    input_dir: str = Field(default_factory=lambda: str(SETTINGS.paths.data_dir / "raw"))
+    out_path: str = Field(default_factory=lambda: str(SETTINGS.paths.chunk_path))
     chunk_size: int = Field(default=500, gt=0)
     overlap: int = Field(default=50, ge=0)
+
+    @field_validator("input_dir", "out_path")
+    @classmethod
+    def validate_path_text(cls, value: str) -> str:
+        return _validate_text_limit(value, field_name="path")
 
 
 class SearchRequest(BaseModel):
     """Search request."""
 
     query: str = Field(min_length=1)
-    chunks_path: str = Field(default="data/processed/chunks.jsonl")
+    chunks_path: str = Field(default_factory=lambda: str(SETTINGS.paths.chunk_path))
     top_k: int = Field(default=5, ge=1)
     mode: str = Field(default="lexical")
+
+    @field_validator("query")
+    @classmethod
+    def validate_query_length(cls, value: str) -> str:
+        return _validate_text_limit(
+            value,
+            field_name="query",
+            max_chars=SETTINGS.api_max_query_chars,
+        )
+
+    @field_validator("chunks_path", "mode")
+    @classmethod
+    def validate_short_text(cls, value: str) -> str:
+        return _validate_text_limit(value, field_name="request field")
+
+    @field_validator("top_k")
+    @classmethod
+    def validate_top_k(cls, value: int) -> int:
+        if value > SETTINGS.api_max_top_k:
+            raise ValueError(f"top_k must be less than or equal to {SETTINGS.api_max_top_k}.")
+        return value
 
 
 class AskRequest(SearchRequest):
@@ -53,29 +123,58 @@ class EvaluateRequest(BaseModel):
     question: str = Field(min_length=1)
     answer_text: str = Field(min_length=1)
     citations: list[str] = Field(default_factory=list)
-    chunks_path: str = Field(default="data/processed/chunks.jsonl")
+    chunks_path: str = Field(default_factory=lambda: str(SETTINGS.paths.chunk_path))
     retrieved_chunk_ids: list[str] = Field(default_factory=list)
     reference_chunk_ids: list[str] = Field(default_factory=list)
     expected_answer: str = Field(default="")
     expected_unanswerable: bool | None = Field(default=None)
 
+    @field_validator("question")
+    @classmethod
+    def validate_question_length(cls, value: str) -> str:
+        return _validate_text_limit(
+            value,
+            field_name="question",
+            max_chars=SETTINGS.api_max_query_chars,
+        )
 
-TRACE_STORE = JsonlTraceStore(Path("artifacts/traces/traces.jsonl"))
+    @field_validator("answer_text", "expected_answer")
+    @classmethod
+    def validate_payload_text_length(cls, value: str) -> str:
+        return _validate_text_limit(
+            value,
+            field_name="evaluation text",
+            max_chars=SETTINGS.api_max_text_chars,
+        )
+
+    @field_validator("chunks_path")
+    @classmethod
+    def validate_chunks_path(cls, value: str) -> str:
+        return _validate_text_limit(value, field_name="path")
+
+    @field_validator("citations", "retrieved_chunk_ids", "reference_chunk_ids")
+    @classmethod
+    def validate_identifier_list_length(cls, value: list[str]) -> list[str]:
+        if len(value) > SETTINGS.api_max_top_k:
+            raise ValueError(
+                f"Identifier lists must contain at most {SETTINGS.api_max_top_k} entries."
+            )
+        return value
 
 
-def _load_retriever(
-    chunks_path: str, mode: str
-) -> tuple[list[RetrievalResult], BM25Retriever | VectorRetriever | HybridRetriever]:
-    chunks = load_chunks_jsonl(Path(chunks_path))
-    lexical = BM25Retriever(chunks)
-    vector = VectorRetriever(chunks, FakeEmbeddingClient())
-    if mode == "lexical":
-        return [], lexical
-    if mode == "vector":
-        return [], vector
-    if mode == "hybrid":
-        return [], HybridRetriever(lexical, vector)
-    raise HTTPException(status_code=400, detail=f"Unsupported retrieval mode: {mode}")
+TRACE_STORE = JsonlTraceStore(SETTINGS.paths.trace_path)
+
+
+def _validate_text_limit(
+    value: str,
+    *,
+    field_name: str,
+    max_chars: int | None = None,
+) -> str:
+    limit = max_chars or SETTINGS.api_max_text_chars
+    if len(value) > limit:
+        raise ValueError(f"{field_name} must contain at most {limit} characters.")
+    return value
 
 
 def _search(request: SearchRequest) -> list[RetrievalResult]:

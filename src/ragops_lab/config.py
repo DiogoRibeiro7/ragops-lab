@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from pydantic import BaseModel, Field, field_validator
@@ -53,3 +54,74 @@ class RuntimeSettings(BaseModel):
     random_seed: int = Field(default=42, ge=0)
     debug: bool = Field(default=False)
     paths: ProjectPaths = Field(default_factory=ProjectPaths)
+    api_max_request_bytes: int = Field(default=1_000_000, gt=0)
+    api_max_top_k: int = Field(default=20, ge=1)
+    api_max_query_chars: int = Field(default=1_000, ge=1)
+    api_max_text_chars: int = Field(default=20_000, ge=1)
+
+    @classmethod
+    def from_env(cls) -> RuntimeSettings:
+        """Build runtime settings from `RAGOPS_*` environment variables."""
+        paths = ProjectPaths(
+            data_dir=_path_from_env(
+                "RAGOPS_DATA_DIR",
+                ProjectPaths.model_fields["data_dir"].default,
+            ),
+            artifact_dir=_path_from_env(
+                "RAGOPS_ARTIFACT_DIR",
+                ProjectPaths.model_fields["artifact_dir"].default,
+            ),
+            model_dir=_path_from_env(
+                "RAGOPS_MODEL_DIR",
+                ProjectPaths.model_fields["model_dir"].default,
+            ),
+            trace_path=_path_from_env(
+                "RAGOPS_TRACE_PATH",
+                ProjectPaths.model_fields["trace_path"].default,
+            ),
+            chunk_path=_path_from_env(
+                "RAGOPS_CHUNK_PATH",
+                ProjectPaths.model_fields["chunk_path"].default,
+            ),
+        )
+        return cls(
+            environment=os.getenv("RAGOPS_ENVIRONMENT", "local"),
+            random_seed=_int_from_env("RAGOPS_RANDOM_SEED", 42),
+            debug=_bool_from_env("RAGOPS_DEBUG", default=False),
+            paths=paths,
+            api_max_request_bytes=_int_from_env("RAGOPS_API_MAX_REQUEST_BYTES", 1_000_000),
+            api_max_top_k=_int_from_env("RAGOPS_API_MAX_TOP_K", 20),
+            api_max_query_chars=_int_from_env("RAGOPS_API_MAX_QUERY_CHARS", 1_000),
+            api_max_text_chars=_int_from_env("RAGOPS_API_MAX_TEXT_CHARS", 20_000),
+        )
+
+
+def _path_from_env(name: str, default: object) -> Path:
+    value = os.getenv(name)
+    if value:
+        return Path(value)
+    if isinstance(default, Path):
+        return default
+    raise TypeError(f"Default for {name} must be a pathlib.Path instance.")
+
+
+def _int_from_env(name: str, default: int) -> int:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    try:
+        return int(value)
+    except ValueError as exc:
+        raise ValueError(f"{name} must be an integer.") from exc
+
+
+def _bool_from_env(name: str, *, default: bool) -> bool:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    normalized = value.strip().lower()
+    if normalized in {"1", "true", "yes", "on"}:
+        return True
+    if normalized in {"0", "false", "no", "off"}:
+        return False
+    raise ValueError(f"{name} must be a boolean value.")
