@@ -26,8 +26,19 @@ class ProjectPaths(BaseModel):
         default=Path("data/processed/chunks.jsonl"),
         description="Default chunk storage path.",
     )
+    vector_index_path: Path = Field(
+        default=Path("artifacts/index/vector_index.json"),
+        description="Default local vector index path.",
+    )
 
-    @field_validator("data_dir", "artifact_dir", "model_dir", "trace_path", "chunk_path")
+    @field_validator(
+        "data_dir",
+        "artifact_dir",
+        "model_dir",
+        "trace_path",
+        "chunk_path",
+        "vector_index_path",
+    )
     @classmethod
     def ensure_relative_or_absolute_path(cls, value: Path) -> Path:
         """Validate path-like fields.
@@ -82,6 +93,10 @@ class RuntimeSettings(BaseModel):
             chunk_path=_path_from_env(
                 "RAGOPS_CHUNK_PATH",
                 ProjectPaths.model_fields["chunk_path"].default,
+            ),
+            vector_index_path=_path_from_env(
+                "RAGOPS_VECTOR_INDEX_PATH",
+                ProjectPaths.model_fields["vector_index_path"].default,
             ),
         )
         return cls(

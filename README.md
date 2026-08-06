@@ -58,6 +58,14 @@ You can also use the installed console script:
 poetry run ragops-lab ask "Which Apollo mission first landed on the Moon?" --chunks data/processed/chunks.jsonl
 ```
 
+For vector or hybrid retrieval, build the local deterministic vector index once
+and reload it at query time:
+
+```bash
+poetry run ragops-lab index --chunks data/processed/chunks.jsonl --out artifacts/index/vector_index.json
+poetry run ragops-lab ask "What does citation support measure?" --mode vector --index-path artifacts/index/vector_index.json
+```
+
 ### 4. Run the API
 
 ```bash
@@ -67,6 +75,7 @@ poetry run uvicorn ragops_lab.api.app:app --host 0.0.0.0 --port 8000
 Then use:
 
 - `POST /ingest`
+- `POST /index`
 - `POST /search`
 - `POST /ask`
 - `POST /evaluate`
@@ -192,6 +201,7 @@ be overridden with environment variables:
 | `RAGOPS_ARTIFACT_DIR` | `artifacts` |
 | `RAGOPS_MODEL_DIR` | `models` |
 | `RAGOPS_CHUNK_PATH` | `data/processed/chunks.jsonl` |
+| `RAGOPS_VECTOR_INDEX_PATH` | `artifacts/index/vector_index.json` |
 | `RAGOPS_TRACE_PATH` | `artifacts/traces/traces.jsonl` |
 | `RAGOPS_API_MAX_REQUEST_BYTES` | `1000000` |
 | `RAGOPS_API_MAX_TOP_K` | `20` |

@@ -22,6 +22,7 @@ from ragops_lab.retrieval import (
     BM25Retriever,
     FakeEmbeddingClient,
     HybridRetriever,
+    LocalVectorIndex,
     VectorRetriever,
 )
 from ragops_lab.tracing import JsonlTraceStore
@@ -98,11 +99,24 @@ class IngestRequest(BaseModel):
         return _validate_text_limit(value, field_name="path")
 
 
+class IndexRequest(BaseModel):
+    """Request body for local vector indexing."""
+
+    chunks_path: str = Field(default_factory=lambda: str(SETTINGS.paths.chunk_path))
+    index_path: str = Field(default_factory=lambda: str(SETTINGS.paths.vector_index_path))
+
+    @field_validator("chunks_path", "index_path")
+    @classmethod
+    def validate_path_text(cls, value: str) -> str:
+        return _validate_text_limit(value, field_name="path")
+
+
 class SearchRequest(BaseModel):
     """Search request."""
 
     query: str = Field(min_length=1)
     chunks_path: str = Field(default_factory=lambda: str(SETTINGS.paths.chunk_path))
+    index_path: str | None = Field(default=None)
     top_k: int = Field(default=5, ge=1)
     mode: str = Field(default="lexical")
 
@@ -115,9 +129,11 @@ class SearchRequest(BaseModel):
             max_chars=SETTINGS.api_max_query_chars,
         )
 
-    @field_validator("chunks_path", "mode")
+    @field_validator("chunks_path", "index_path", "mode")
     @classmethod
-    def validate_short_text(cls, value: str) -> str:
+    def validate_short_text(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
         return _validate_text_limit(value, field_name="request field")
 
     @field_validator("top_k")
@@ -195,9 +211,13 @@ def _validate_text_limit(
 def _search(request: SearchRequest) -> list[RetrievalResult]:
     if request.mode not in {"lexical", "vector", "hybrid"}:
         raise HTTPException(status_code=400, detail=f"Unsupported retrieval mode: {request.mode}")
-    chunks = load_chunks_jsonl(Path(request.chunks_path))
+    vector_index = LocalVectorIndex.load(Path(request.index_path)) if request.index_path else None
+    chunks = vector_index.chunks if vector_index else load_chunks_jsonl(Path(request.chunks_path))
     lexical = BM25Retriever(chunks)
-    vector = VectorRetriever(chunks, FakeEmbeddingClient())
+    vector = vector_index.as_retriever() if vector_index else VectorRetriever(
+        chunks,
+        FakeEmbeddingClient(),
+    )
     if request.mode == "lexical":
         return lexical.search(request.query, top_k=request.top_k)
     if request.mode == "vector":
@@ -221,6 +241,14 @@ def ingest(request: IngestRequest) -> dict[str, int | str]:
         config=ChunkingConfig(chunk_size=request.chunk_size, overlap=request.overlap),
     )
     return {"chunks_written": len(chunks), "out_path": request.out_path}
+
+
+@app.post("/index")
+def index(request: IndexRequest) -> dict[str, int | str]:
+    """Build a persistent local vector index from chunk JSONL."""
+    chunks = load_chunks_jsonl(Path(request.chunks_path))
+    LocalVectorIndex.build(chunks).save(Path(request.index_path))
+    return {"chunks_indexed": len(chunks), "index_path": request.index_path}
 
 
 @app.post("/search")

@@ -2,6 +2,7 @@
 
 from .evaluation import RetrievalEvaluationReport, RetrievalGoldenExample, evaluate_retrieval
 from .hybrid import HybridRetriever
+from .index import LocalVectorIndex
 from .lexical import BM25Retriever
 from .tokenizer import tokenize
 from .vector import (
@@ -19,6 +20,7 @@ __all__ = [
     "SentenceTransformerEmbeddingClient",
     "VectorRetriever",
     "HybridRetriever",
+    "LocalVectorIndex",
     "RetrievalGoldenExample",
     "RetrievalEvaluationReport",
     "evaluate_retrieval",

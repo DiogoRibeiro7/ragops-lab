@@ -87,10 +87,20 @@ class SentenceTransformerEmbeddingClient:
 class VectorRetriever:
     """In-memory vector retriever."""
 
-    def __init__(self, chunks: list[DocumentChunk], embedding_client: EmbeddingClient) -> None:
+    def __init__(
+        self,
+        chunks: list[DocumentChunk],
+        embedding_client: EmbeddingClient,
+        *,
+        chunk_vectors: list[list[float]] | None = None,
+    ) -> None:
         self.chunks = chunks
         self.embedding_client = embedding_client
-        self.chunk_vectors = embedding_client.embed_texts([chunk.text for chunk in chunks])
+        if chunk_vectors is not None and len(chunk_vectors) != len(chunks):
+            raise ValueError("chunk_vectors must contain one vector per chunk.")
+        self.chunk_vectors = chunk_vectors or embedding_client.embed_texts(
+            [chunk.text for chunk in chunks]
+        )
 
     def search(self, query: str, *, top_k: int = 5) -> list[RetrievalResult]:
         query_vector = self.embedding_client.embed_query(query)

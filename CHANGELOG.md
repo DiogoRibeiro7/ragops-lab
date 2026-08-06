@@ -19,6 +19,7 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - Added structured API errors and clearer CLI exits for missing local resources
   and invalid runtime inputs.
 - Added trace summaries, filtered trace listing, and a richer dashboard table.
+- Added a persistent local vector index with CLI/API indexing and reload support.
 
 ## [0.1.4] - 2026-08-05
 

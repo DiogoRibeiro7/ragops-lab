@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from ragops_lab.domain import DocumentChunk
 from ragops_lab.retrieval import (
     BM25Retriever,
     FakeEmbeddingClient,
     HybridRetriever,
+    LocalVectorIndex,
     RetrievalGoldenExample,
     VectorRetriever,
     evaluate_retrieval,
@@ -56,6 +59,28 @@ def test_fake_embedding_client_reuses_document_vocabulary_for_queries() -> None:
     results = vector.search("citation support", top_k=1)
 
     assert results[0].chunk.chunk_id == "metrics:0"
+
+
+def test_local_vector_index_round_trips_and_reloads_retriever(tmp_path: Path) -> None:
+    index_path = tmp_path / "vector_index.json"
+    index = LocalVectorIndex.build(_chunks())
+
+    index.save(index_path)
+    loaded = LocalVectorIndex.load(index_path)
+    results = loaded.as_retriever().search("citation support", top_k=1)
+
+    assert loaded.embedding_model == "fake-bow"
+    assert loaded.vocabulary
+    assert results[0].chunk.chunk_id == "metrics:0"
+
+
+def test_vector_retriever_rejects_mismatched_precomputed_vectors() -> None:
+    try:
+        VectorRetriever(_chunks(), FakeEmbeddingClient(), chunk_vectors=[[1.0]])
+    except ValueError as exc:
+        assert "one vector per chunk" in str(exc)
+    else:
+        raise AssertionError("Expected mismatched vectors to fail.")
 
 
 def test_retrieval_evaluation_computes_recall_and_mrr() -> None:

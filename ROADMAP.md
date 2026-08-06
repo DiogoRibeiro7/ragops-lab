@@ -24,6 +24,7 @@ The repository includes a working local MVP with:
 - notebook execution checks in CI with `nbval`
 - configurable runtime paths and API request safety limits
 - trace summary, filtering, and dashboard inspection views
+- persistent local vector indexing and reload support
 
 ## Recently completed
 
@@ -44,6 +45,7 @@ The repository includes a working local MVP with:
   unsupported inputs, and invalid evaluation requests.
 - Added trace summaries, a filtered `GET /traces` endpoint, and a richer
   dashboard table for trace inspection.
+- Added a persistent local vector index with CLI/API build and reload flows.
 
 ## Known issues and bugs
 
@@ -84,8 +86,8 @@ fixed before the behaviours they affect are relied on.
 
 ## Milestone 3 — Move beyond in-memory retrieval
 
-- Add a persistent local vector store for embeddings.
-- Add indexing and reload flows for processed documents and chunks.
+- [x] Add a persistent local vector store for embeddings.
+- [x] Add indexing and reload flows for processed documents and chunks.
 - Separate retrieval configuration from runtime execution paths.
 - Support configurable retrieval profiles for lexical, vector, and hybrid search.
 

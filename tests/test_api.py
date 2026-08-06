@@ -81,6 +81,39 @@ def test_api_ingest_and_evaluate_endpoints(tmp_path: Path) -> None:
     assert evaluate_response.json()["citation_support"] == 1.0
 
 
+def test_api_builds_and_uses_persistent_vector_index(tmp_path: Path) -> None:
+    client = TestClient(app)
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    (raw_dir / "metrics.txt").write_text(
+        "Faithfulness and citation support are critical RAG metrics.",
+        encoding="utf-8",
+    )
+    chunks_path = tmp_path / "chunks.jsonl"
+    index_path = tmp_path / "vector_index.json"
+    ingest_directory(raw_dir, chunks_path, ChunkingConfig(chunk_size=120, overlap=10))
+
+    index_response = client.post(
+        "/index",
+        json={"chunks_path": str(chunks_path), "index_path": str(index_path)},
+    )
+    search_response = client.post(
+        "/search",
+        json={
+            "query": "citation support",
+            "index_path": str(index_path),
+            "mode": "vector",
+            "top_k": 1,
+        },
+    )
+
+    assert index_response.status_code == 200
+    assert index_response.json()["chunks_indexed"] == 1
+    assert index_path.exists()
+    assert search_response.status_code == 200
+    assert search_response.json()[0]["chunk"]["chunk_id"] == "metrics:0"
+
+
 def test_api_uses_configured_default_chunk_path() -> None:
     assert app.version == __version__
     assert SETTINGS.paths.chunk_path.as_posix() == "data/processed/chunks.jsonl"
