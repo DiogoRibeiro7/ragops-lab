@@ -96,8 +96,7 @@ def load_golden_examples(path: Path) -> list[BenchmarkGoldenExample]:
     ]
     if invalid_answerable:
         raise ValueError(
-            "Answerable golden examples must include relevant chunk ids: "
-            f"{invalid_answerable}"
+            f"Answerable golden examples must include relevant chunk ids: {invalid_answerable}"
         )
     return examples
 
@@ -179,16 +178,15 @@ def run_evaluation(
     retrieval_divisor = max(len(answerable_cases), 1)
     average_faithfulness = sum(case.evaluation.faithfulness for case in cases) / divisor
     average_citation_support = sum(case.evaluation.citation_support for case in cases) / divisor
-    refusal_accuracy = sum(
-        1.0 for case in cases if case.evaluation.refusal_correct is True
-    ) / divisor
+    refusal_accuracy = (
+        sum(1.0 for case in cases if case.evaluation.refusal_correct is True) / divisor
+    )
     summary = EvaluationSummary(
         case_count=case_count,
         answerable_case_count=len(answerable_cases),
         unanswerable_case_count=case_count - len(answerable_cases),
         top_k=top_k,
-        average_recall_at_k=sum(case.recall_at_k for case in answerable_cases)
-        / retrieval_divisor,
+        average_recall_at_k=sum(case.recall_at_k for case in answerable_cases) / retrieval_divisor,
         mean_reciprocal_rank=sum(case.reciprocal_rank for case in answerable_cases)
         / retrieval_divisor,
         average_faithfulness=average_faithfulness,
