@@ -58,6 +58,8 @@ The repository includes a working local MVP with:
   per-run artifacts.
 - Added refusal-set benchmark coverage for unanswerable and weak-context
   questions.
+- Added richer API usage documentation with concrete request and response
+  examples.
 
 ## Known issues and bugs
 
@@ -115,10 +117,10 @@ fixed before the behaviours they affect are relied on.
 
 ## Milestone 5 — Product and deployment polish
 
-- Improve the dashboard into a more useful inspection surface for traces and metrics.
-- Add richer API usage documentation and example payloads.
-- Add release notes and a first tagged release from `main`.
-- Add deployment guidance for local demos and portfolio presentation.
+- [ ] Improve the dashboard into a more useful inspection surface for traces and metrics.
+- [x] Add richer API usage documentation and example payloads.
+- [x] Add release notes and a first tagged release from `main`.
+- [ ] Add deployment guidance for local demos and portfolio presentation.
 
 ## Planned features
 

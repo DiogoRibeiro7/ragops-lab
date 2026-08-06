@@ -83,6 +83,9 @@ Then use:
 - `GET /traces/{id}`
 - `GET /dashboard`
 
+See [`docs/api.md`](docs/api.md) for request bodies, response examples,
+runtime settings, and error formats.
+
 ### 5. Run with Docker
 
 ```bash
@@ -111,7 +114,7 @@ clients, so `poetry install --with dev` is the only prerequisite. To re-execute:
 poetry run jupyter nbconvert --to notebook --execute --inplace notebooks/*.ipynb
 ```
 
-## Example API calls
+## Example API Calls
 
 ### Ingest
 

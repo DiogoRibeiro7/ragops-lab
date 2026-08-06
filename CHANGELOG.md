@@ -11,6 +11,9 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 - Added refusal benchmark fixtures and refusal-accuracy reporting for
   unanswerable and weak-context evaluation cases.
+- Added a dedicated API usage guide with endpoint summaries, request payloads,
+  response examples, trace inspection examples, runtime settings, and error
+  formats.
 
 ### Changed
 
