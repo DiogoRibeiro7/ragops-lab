@@ -13,11 +13,15 @@ from ragops_lab.evaluation.service import evaluate_answer
 from ragops_lab.generation import GenerationService, HeuristicLLMClient
 from ragops_lab.ingestion import ChunkingConfig, ingest_directory
 from ragops_lab.retrieval import BM25Retriever
-from ragops_lab.retrieval.evaluation import (
-    RetrievalGoldenExample,
-    recall_at_k,
-    reciprocal_rank,
-)
+from ragops_lab.retrieval.evaluation import recall_at_k, reciprocal_rank
+
+
+class BenchmarkGoldenExample(BaseModel):
+    """Golden benchmark example for answerable or unanswerable questions."""
+
+    query: str = Field(min_length=1)
+    relevant_chunk_ids: list[str] = Field(default_factory=list)
+    expected_unanswerable: bool = Field(default=False)
 
 
 class EvaluationCase(BaseModel):
@@ -26,6 +30,7 @@ class EvaluationCase(BaseModel):
     query: str
     retrieved_chunk_ids: list[str]
     relevant_chunk_ids: list[str]
+    expected_unanswerable: bool = Field(default=False)
     recall_at_k: float = Field(ge=0.0, le=1.0)
     reciprocal_rank: float = Field(ge=0.0, le=1.0)
     answer: GeneratedAnswer
@@ -36,13 +41,17 @@ class EvaluationSummary(BaseModel):
     """Aggregate regression metrics and threshold status for one run."""
 
     case_count: int = Field(ge=0)
+    answerable_case_count: int = Field(ge=0)
+    unanswerable_case_count: int = Field(ge=0)
     top_k: int = Field(ge=1)
     average_recall_at_k: float = Field(ge=0.0, le=1.0)
     mean_reciprocal_rank: float = Field(ge=0.0, le=1.0)
     average_faithfulness: float = Field(ge=0.0, le=1.0)
     average_citation_support: float = Field(ge=0.0, le=1.0)
+    refusal_accuracy: float = Field(ge=0.0, le=1.0)
     min_faithfulness: float = Field(ge=0.0, le=1.0)
     min_citation_support: float = Field(ge=0.0, le=1.0)
+    min_refusal_accuracy: float = Field(ge=0.0, le=1.0)
     passed: bool
 
 
@@ -59,6 +68,8 @@ class BenchmarkSummary(BaseModel):
 
     run_count: int = Field(ge=1)
     case_count: int = Field(ge=0)
+    answerable_case_count: int = Field(ge=0)
+    unanswerable_case_count: int = Field(ge=0)
     top_k: int = Field(ge=1)
     average_recall_at_k: float = Field(ge=0.0, le=1.0)
     mean_reciprocal_rank: float = Field(ge=0.0, le=1.0)
@@ -66,15 +77,29 @@ class BenchmarkSummary(BaseModel):
     lowest_run_faithfulness: float = Field(ge=0.0, le=1.0)
     average_citation_support: float = Field(ge=0.0, le=1.0)
     lowest_run_citation_support: float = Field(ge=0.0, le=1.0)
+    average_refusal_accuracy: float = Field(ge=0.0, le=1.0)
+    lowest_run_refusal_accuracy: float = Field(ge=0.0, le=1.0)
     min_faithfulness: float = Field(ge=0.0, le=1.0)
     min_citation_support: float = Field(ge=0.0, le=1.0)
+    min_refusal_accuracy: float = Field(ge=0.0, le=1.0)
     passed: bool
 
 
-def load_golden_examples(path: Path) -> list[RetrievalGoldenExample]:
-    """Load golden retrieval examples from JSON."""
+def load_golden_examples(path: Path) -> list[BenchmarkGoldenExample]:
+    """Load golden benchmark examples from JSON."""
     payload = json.loads(path.read_text(encoding="utf-8"))
-    return [RetrievalGoldenExample.model_validate(example) for example in payload]
+    examples = [BenchmarkGoldenExample.model_validate(example) for example in payload]
+    invalid_answerable = [
+        example.query
+        for example in examples
+        if not example.expected_unanswerable and not example.relevant_chunk_ids
+    ]
+    if invalid_answerable:
+        raise ValueError(
+            "Answerable golden examples must include relevant chunk ids: "
+            f"{invalid_answerable}"
+        )
+    return examples
 
 
 def run_evaluation(
@@ -87,16 +112,20 @@ def run_evaluation(
     overlap: int,
     min_faithfulness: float,
     min_citation_support: float,
+    refusal_path: Path | None = Path("data/golden/refusal.json"),
+    min_refusal_accuracy: float = 1.0,
 ) -> tuple[EvaluationSummary, list[EvaluationCase]]:
     """Run one deterministic RAG evaluation pass over a golden dataset."""
     _validate_benchmark_inputs(
         source_dir=source_dir,
         golden_path=golden_path,
+        refusal_path=refusal_path,
         top_k=top_k,
         chunk_size=chunk_size,
         overlap=overlap,
         min_faithfulness=min_faithfulness,
         min_citation_support=min_citation_support,
+        min_refusal_accuracy=min_refusal_accuracy,
     )
     chunks = ingest_directory(
         source_dir,
@@ -106,6 +135,8 @@ def run_evaluation(
     retriever = BM25Retriever(chunks)
     generation = GenerationService(HeuristicLLMClient())
     golden_examples = load_golden_examples(golden_path)
+    if refusal_path is not None:
+        golden_examples.extend(load_golden_examples(refusal_path))
     available_chunk_ids = {chunk.chunk_id for chunk in chunks}
 
     cases: list[EvaluationCase] = []
@@ -127,13 +158,14 @@ def run_evaluation(
             answer,
             results,
             reference_chunk_ids=example.relevant_chunk_ids,
-            expected_unanswerable=False,
+            expected_unanswerable=example.expected_unanswerable,
         )
         cases.append(
             EvaluationCase(
                 query=example.query,
                 retrieved_chunk_ids=retrieved_ids,
                 relevant_chunk_ids=example.relevant_chunk_ids,
+                expected_unanswerable=example.expected_unanswerable,
                 recall_at_k=recall_at_k(retrieved_ids, relevant_ids),
                 reciprocal_rank=reciprocal_rank(retrieved_ids, relevant_ids),
                 answer=answer,
@@ -143,20 +175,32 @@ def run_evaluation(
 
     case_count = len(cases)
     divisor = max(case_count, 1)
+    answerable_cases = [case for case in cases if not case.expected_unanswerable]
+    retrieval_divisor = max(len(answerable_cases), 1)
     average_faithfulness = sum(case.evaluation.faithfulness for case in cases) / divisor
     average_citation_support = sum(case.evaluation.citation_support for case in cases) / divisor
+    refusal_accuracy = sum(
+        1.0 for case in cases if case.evaluation.refusal_correct is True
+    ) / divisor
     summary = EvaluationSummary(
         case_count=case_count,
+        answerable_case_count=len(answerable_cases),
+        unanswerable_case_count=case_count - len(answerable_cases),
         top_k=top_k,
-        average_recall_at_k=sum(case.recall_at_k for case in cases) / divisor,
-        mean_reciprocal_rank=sum(case.reciprocal_rank for case in cases) / divisor,
+        average_recall_at_k=sum(case.recall_at_k for case in answerable_cases)
+        / retrieval_divisor,
+        mean_reciprocal_rank=sum(case.reciprocal_rank for case in answerable_cases)
+        / retrieval_divisor,
         average_faithfulness=average_faithfulness,
         average_citation_support=average_citation_support,
+        refusal_accuracy=refusal_accuracy,
         min_faithfulness=min_faithfulness,
         min_citation_support=min_citation_support,
+        min_refusal_accuracy=min_refusal_accuracy,
         passed=(
             average_faithfulness >= min_faithfulness
             and average_citation_support >= min_citation_support
+            and refusal_accuracy >= min_refusal_accuracy
         ),
     )
     return summary, cases
@@ -173,6 +217,8 @@ def run_benchmark(
     overlap: int,
     min_faithfulness: float,
     min_citation_support: float,
+    refusal_path: Path | None = Path("data/golden/refusal.json"),
+    min_refusal_accuracy: float = 1.0,
 ) -> tuple[BenchmarkSummary, list[BenchmarkRun]]:
     """Run repeated benchmark passes and aggregate their metrics."""
     if runs < 1:
@@ -180,11 +226,13 @@ def run_benchmark(
     _validate_benchmark_inputs(
         source_dir=source_dir,
         golden_path=golden_path,
+        refusal_path=refusal_path,
         top_k=top_k,
         chunk_size=chunk_size,
         overlap=overlap,
         min_faithfulness=min_faithfulness,
         min_citation_support=min_citation_support,
+        min_refusal_accuracy=min_refusal_accuracy,
     )
 
     benchmark_runs: list[BenchmarkRun] = []
@@ -193,12 +241,14 @@ def run_benchmark(
         summary, cases = run_evaluation(
             source_dir=source_dir,
             golden_path=golden_path,
+            refusal_path=refusal_path,
             chunks_path=run_dir / "chunks.jsonl",
             top_k=top_k,
             chunk_size=chunk_size,
             overlap=overlap,
             min_faithfulness=min_faithfulness,
             min_citation_support=min_citation_support,
+            min_refusal_accuracy=min_refusal_accuracy,
         )
         benchmark_runs.append(BenchmarkRun(run_id=run_id, summary=summary, cases=cases))
 
@@ -206,6 +256,12 @@ def run_benchmark(
     benchmark_summary = BenchmarkSummary(
         run_count=divisor,
         case_count=benchmark_runs[0].summary.case_count if benchmark_runs else 0,
+        answerable_case_count=(
+            benchmark_runs[0].summary.answerable_case_count if benchmark_runs else 0
+        ),
+        unanswerable_case_count=(
+            benchmark_runs[0].summary.unanswerable_case_count if benchmark_runs else 0
+        ),
         top_k=top_k,
         average_recall_at_k=sum(run.summary.average_recall_at_k for run in benchmark_runs)
         / divisor,
@@ -219,8 +275,12 @@ def run_benchmark(
         lowest_run_citation_support=min(
             run.summary.average_citation_support for run in benchmark_runs
         ),
+        average_refusal_accuracy=sum(run.summary.refusal_accuracy for run in benchmark_runs)
+        / divisor,
+        lowest_run_refusal_accuracy=min(run.summary.refusal_accuracy for run in benchmark_runs),
         min_faithfulness=min_faithfulness,
         min_citation_support=min_citation_support,
+        min_refusal_accuracy=min_refusal_accuracy,
         passed=all(run.summary.passed for run in benchmark_runs),
     )
     return benchmark_summary, benchmark_runs
@@ -249,12 +309,14 @@ def write_artifacts(
                 "query",
                 "retrieved_chunk_ids",
                 "relevant_chunk_ids",
+                "expected_unanswerable",
                 "recall_at_k",
                 "reciprocal_rank",
+                "refusal",
+                "refusal_correct",
                 "faithfulness",
                 "citation_support",
                 "unsupported_claim_count",
-                "refusal_correct",
             ],
         )
         writer.writeheader()
@@ -264,12 +326,14 @@ def write_artifacts(
                     "query": case.query,
                     "retrieved_chunk_ids": " ".join(case.retrieved_chunk_ids),
                     "relevant_chunk_ids": " ".join(case.relevant_chunk_ids),
+                    "expected_unanswerable": case.expected_unanswerable,
                     "recall_at_k": f"{case.recall_at_k:.4f}",
                     "reciprocal_rank": f"{case.reciprocal_rank:.4f}",
+                    "refusal": case.answer.refusal,
+                    "refusal_correct": case.evaluation.refusal_correct,
                     "faithfulness": f"{case.evaluation.faithfulness:.4f}",
                     "citation_support": f"{case.evaluation.citation_support:.4f}",
                     "unsupported_claim_count": case.evaluation.unsupported_claim_count,
-                    "refusal_correct": case.evaluation.refusal_correct,
                 }
             )
 
@@ -277,13 +341,17 @@ def write_artifacts(
         "# RAG Evaluation Regression Report",
         "",
         f"- Cases: {summary.case_count}",
+        f"- Answerable cases: {summary.answerable_case_count}",
+        f"- Unanswerable cases: {summary.unanswerable_case_count}",
         f"- Top k: {summary.top_k}",
         f"- Recall@k: {summary.average_recall_at_k:.2f}",
         f"- MRR: {summary.mean_reciprocal_rank:.2f}",
         f"- Faithfulness: {summary.average_faithfulness:.2f}",
         f"- Citation support: {summary.average_citation_support:.2f}",
+        f"- Refusal accuracy: {summary.refusal_accuracy:.2f}",
         f"- Required faithfulness: {summary.min_faithfulness:.2f}",
         f"- Required citation support: {summary.min_citation_support:.2f}",
+        f"- Required refusal accuracy: {summary.min_refusal_accuracy:.2f}",
         f"- Status: {'passed' if summary.passed else 'failed'}",
     ]
     (output_dir / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -325,6 +393,7 @@ def write_benchmark_artifacts(
                 "mrr",
                 "faithfulness",
                 "citation_support",
+                "refusal_accuracy",
                 "passed",
             ],
         )
@@ -338,6 +407,7 @@ def write_benchmark_artifacts(
                     "mrr": f"{run.summary.mean_reciprocal_rank:.4f}",
                     "faithfulness": f"{run.summary.average_faithfulness:.4f}",
                     "citation_support": f"{run.summary.average_citation_support:.4f}",
+                    "refusal_accuracy": f"{run.summary.refusal_accuracy:.4f}",
                     "passed": run.summary.passed,
                 }
             )
@@ -347,6 +417,8 @@ def write_benchmark_artifacts(
         "",
         f"- Runs: {summary.run_count}",
         f"- Cases per run: {summary.case_count}",
+        f"- Answerable cases per run: {summary.answerable_case_count}",
+        f"- Unanswerable cases per run: {summary.unanswerable_case_count}",
         f"- Top k: {summary.top_k}",
         f"- Average recall@k: {summary.average_recall_at_k:.2f}",
         f"- Mean reciprocal rank: {summary.mean_reciprocal_rank:.2f}",
@@ -354,8 +426,11 @@ def write_benchmark_artifacts(
         f"- Lowest run faithfulness: {summary.lowest_run_faithfulness:.2f}",
         f"- Average citation support: {summary.average_citation_support:.2f}",
         f"- Lowest run citation support: {summary.lowest_run_citation_support:.2f}",
+        f"- Average refusal accuracy: {summary.average_refusal_accuracy:.2f}",
+        f"- Lowest run refusal accuracy: {summary.lowest_run_refusal_accuracy:.2f}",
         f"- Required faithfulness: {summary.min_faithfulness:.2f}",
         f"- Required citation support: {summary.min_citation_support:.2f}",
+        f"- Required refusal accuracy: {summary.min_refusal_accuracy:.2f}",
         f"- Status: {'passed' if summary.passed else 'failed'}",
     ]
     (output_dir / "benchmark-summary.md").write_text(
@@ -373,6 +448,8 @@ def _validate_benchmark_inputs(
     overlap: int,
     min_faithfulness: float,
     min_citation_support: float,
+    refusal_path: Path | None,
+    min_refusal_accuracy: float,
 ) -> None:
     if not source_dir.exists():
         raise ValueError(f"Source directory not found: {source_dir}")
@@ -380,6 +457,8 @@ def _validate_benchmark_inputs(
         raise ValueError(f"Source path is not a directory: {source_dir}")
     if not golden_path.exists():
         raise ValueError(f"Golden dataset not found: {golden_path}")
+    if refusal_path is not None and not refusal_path.exists():
+        raise ValueError(f"Refusal dataset not found: {refusal_path}")
     if top_k < 1:
         raise ValueError("top_k must be greater than or equal to 1.")
     if chunk_size <= 0:
@@ -390,3 +469,5 @@ def _validate_benchmark_inputs(
         raise ValueError("min_faithfulness must be between 0 and 1.")
     if not 0.0 <= min_citation_support <= 1.0:
         raise ValueError("min_citation_support must be between 0 and 1.")
+    if not 0.0 <= min_refusal_accuracy <= 1.0:
+        raise ValueError("min_refusal_accuracy must be between 0 and 1.")

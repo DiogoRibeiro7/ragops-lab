@@ -33,16 +33,18 @@ def test_prompt_regression_thresholds(tmp_path: Path) -> None:
             answer,
             results,
             reference_chunk_ids=example["relevant_chunk_ids"],
-            expected_unanswerable=False,
+            expected_unanswerable=example.get("expected_unanswerable", False),
         )
         reports.append(report)
         assert set(example["relevant_chunk_ids"]) <= chunk_ids
 
     average_faithfulness = sum(report.faithfulness for report in reports) / len(reports)
     average_citation_support = sum(report.citation_support for report in reports) / len(reports)
+    refusal_accuracy = sum(report.refusal_correct is True for report in reports) / len(reports)
     artifact_dir = tmp_path / "artifacts" / "evaluation"
     export_evaluation_report_csv(reports[0], artifact_dir / "report.csv")
     export_evaluation_report_markdown(reports[0], artifact_dir / "report.md")
 
     assert average_faithfulness >= 0.8
     assert average_citation_support >= 1.0
+    assert refusal_accuracy >= 1.0

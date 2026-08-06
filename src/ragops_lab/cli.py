@@ -156,6 +156,7 @@ def ask(
 def benchmark(
     source_dir: Path = Path("data/sample_documents"),
     golden_path: Path = Path("data/golden/qa.json"),
+    refusal_path: Path = Path("data/golden/refusal.json"),
     out: Path = Path("artifacts/evaluation"),
     runs: int = 1,
     top_k: int = 2,
@@ -163,6 +164,7 @@ def benchmark(
     overlap: int = 60,
     min_faithfulness: float = 0.80,
     min_citation_support: float = 1.00,
+    min_refusal_accuracy: float = 1.00,
 ) -> None:
     """Run a dataset benchmark over a golden QA set."""
     if not source_dir.exists():
@@ -171,6 +173,8 @@ def benchmark(
         _fail(f"Source path is not a directory: {source_dir}")
     if not golden_path.exists():
         _fail(f"Golden dataset not found: {golden_path}")
+    if not refusal_path.exists():
+        _fail(f"Refusal dataset not found: {refusal_path}")
     if runs < 1:
         _fail("runs must be greater than or equal to 1.")
     if top_k < 1:
@@ -179,6 +183,7 @@ def benchmark(
         summary, benchmark_runs = run_benchmark(
             source_dir=source_dir,
             golden_path=golden_path,
+            refusal_path=refusal_path,
             output_dir=out,
             runs=runs,
             top_k=top_k,
@@ -186,6 +191,7 @@ def benchmark(
             overlap=overlap,
             min_faithfulness=min_faithfulness,
             min_citation_support=min_citation_support,
+            min_refusal_accuracy=min_refusal_accuracy,
         )
     except ValueError as exc:
         _fail(str(exc))
@@ -200,6 +206,7 @@ def benchmark(
     table.add_row("MRR", f"{summary.mean_reciprocal_rank:.2f}")
     table.add_row("Faithfulness", f"{summary.average_faithfulness:.2f}")
     table.add_row("Citation support", f"{summary.average_citation_support:.2f}")
+    table.add_row("Refusal accuracy", f"{summary.average_refusal_accuracy:.2f}")
     table.add_row("Status", "passed" if summary.passed else "failed")
     table.add_row("Artifacts", str(out))
     console.print(table)

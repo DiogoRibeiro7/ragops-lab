@@ -1,0 +1,14 @@
+[
+  {
+    "query": "What is the capital of France?",
+    "expected_unanswerable": true
+  },
+  {
+    "query": "Which planet has the tallest mountain in the solar system?",
+    "expected_unanswerable": true
+  },
+  {
+    "query": "What default API key should this project use for a hosted LLM provider?",
+    "expected_unanswerable": true
+  }
+]

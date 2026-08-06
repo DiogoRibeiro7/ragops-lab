@@ -21,6 +21,7 @@ def test_rag_evaluation_regression_gate_writes_artifacts(tmp_path: Path) -> None
     summary, cases = evaluate_rag.run_evaluation(
         source_dir=Path("data/sample_documents"),
         golden_path=Path("data/golden/qa.json"),
+        refusal_path=Path("data/golden/refusal.json"),
         chunks_path=tmp_path / "chunks.jsonl",
         top_k=2,
         chunk_size=400,
@@ -36,6 +37,8 @@ def test_rag_evaluation_regression_gate_writes_artifacts(tmp_path: Path) -> None
     assert summary.passed
     assert persisted_summary["passed"] is True
     assert persisted_summary["case_count"] == len(cases)
+    assert persisted_summary["unanswerable_case_count"] == 3
+    assert persisted_summary["refusal_accuracy"] == 1.0
     assert (output_dir / "summary.md").exists()
     assert (output_dir / "cases.csv").exists()
     assert (output_dir / "cases.json").exists()
@@ -46,6 +49,7 @@ def test_rag_benchmark_writes_repeated_run_artifacts(tmp_path: Path) -> None:
     summary, runs = evaluate_rag.run_benchmark(
         source_dir=Path("data/sample_documents"),
         golden_path=Path("data/golden/qa.json"),
+        refusal_path=Path("data/golden/refusal.json"),
         output_dir=output_dir,
         runs=2,
         top_k=2,
@@ -63,6 +67,8 @@ def test_rag_benchmark_writes_repeated_run_artifacts(tmp_path: Path) -> None:
     assert summary.passed
     assert persisted_summary["run_count"] == 2
     assert persisted_summary["passed"] is True
+    assert persisted_summary["unanswerable_case_count"] == 3
+    assert persisted_summary["average_refusal_accuracy"] == 1.0
     assert (output_dir / "benchmark-runs.csv").exists()
     assert (output_dir / "run-001" / "cases.csv").exists()
     assert (output_dir / "run-002" / "summary.json").exists()
@@ -80,4 +86,5 @@ def test_rag_benchmark_rejects_missing_source_dir(tmp_path: Path) -> None:
             overlap=60,
             min_faithfulness=0.80,
             min_citation_support=1.00,
+            min_refusal_accuracy=1.00,
         )

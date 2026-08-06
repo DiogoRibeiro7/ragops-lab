@@ -7,6 +7,16 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Added
+
+- Added refusal benchmark fixtures and refusal-accuracy reporting for
+  unanswerable and weak-context evaluation cases.
+
+### Changed
+
+- Improved the deterministic heuristic generator to parse multi-line contexts
+  and refuse answers when retrieved evidence has insufficient query overlap.
+
 ## [0.2.0] - 2026-08-06
 
 ### Added

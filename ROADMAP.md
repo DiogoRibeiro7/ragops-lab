@@ -56,6 +56,8 @@ The repository includes a working local MVP with:
   matching, numeric mismatch checks, and unsupported-claim details.
 - Added a dataset benchmark CLI command with repeated-run summaries and
   per-run artifacts.
+- Added refusal-set benchmark coverage for unanswerable and weak-context
+  questions.
 
 ## Known issues and bugs
 
@@ -109,7 +111,7 @@ fixed before the behaviours they affect are relied on.
   now wired into the CLI and API defaults).
 - [x] Add stronger claim extraction and evidence matching for faithfulness checks.
 - [x] Add dataset-oriented evaluation commands for repeated benchmark runs.
-- [ ] Expand refusal evaluation for unanswerable and weak-context cases.
+- [x] Expand refusal evaluation for unanswerable and weak-context cases.
 
 ## Milestone 5 — Product and deployment polish
 

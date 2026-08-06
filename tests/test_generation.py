@@ -75,6 +75,36 @@ def test_build_llm_client_requires_openai_compatible_endpoint() -> None:
         build_llm_client(settings)
 
 
+def test_heuristic_llm_refuses_when_context_has_no_meaningful_overlap() -> None:
+    answer = GenerationService(HeuristicLLMClient()).answer(
+        "What is the capital of France?",
+        _results(),
+        model_name="heuristic-grounded",
+    )
+
+    assert answer.refusal is True
+    assert answer.citations == []
+
+
+def test_heuristic_llm_refuses_weak_context_overlap() -> None:
+    weak_result = _results()[0].model_copy(
+        update={
+            "chunk": _results()[0].chunk.model_copy(
+                update={"text": "BM25 is a lexical retrieval function."}
+            )
+        }
+    )
+
+    answer = GenerationService(HeuristicLLMClient()).answer(
+        "What does BM25 say about Nobel prizes?",
+        [weak_result],
+        model_name="heuristic-grounded",
+    )
+
+    assert answer.refusal is True
+    assert answer.citations == []
+
+
 def test_cli_ask_uses_saved_chunks(tmp_path: Path) -> None:
     output_path = tmp_path / "chunks.jsonl"
     save_chunks_jsonl([result.chunk for result in _results()], output_path)

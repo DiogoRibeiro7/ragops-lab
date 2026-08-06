@@ -157,6 +157,8 @@ def test_cli_runs_dataset_benchmark(tmp_path: Path) -> None:
     assert "Benchmark Summary" in result.output
     assert summary["run_count"] == 2
     assert summary["passed"] is True
+    assert summary["unanswerable_case_count"] == 3
+    assert summary["average_refusal_accuracy"] == 1.0
     assert (output_dir / "benchmark-runs.csv").exists()
     assert (output_dir / "run-001" / "cases.json").exists()
     assert (output_dir / "run-002" / "summary.md").exists()

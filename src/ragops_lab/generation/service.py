@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -14,6 +15,41 @@ from pydantic import BaseModel, Field
 
 from ragops_lab.config import LLMSettings
 from ragops_lab.domain import GeneratedAnswer, RetrievalResult
+from ragops_lab.retrieval import tokenize
+
+GENERATION_GROUNDING_THRESHOLD = 0.50
+GENERATION_STOPWORDS = frozenset(
+    {
+        "a",
+        "an",
+        "and",
+        "are",
+        "as",
+        "at",
+        "be",
+        "by",
+        "do",
+        "does",
+        "for",
+        "from",
+        "how",
+        "in",
+        "is",
+        "it",
+        "of",
+        "on",
+        "or",
+        "the",
+        "to",
+        "what",
+        "when",
+        "where",
+        "which",
+        "who",
+        "why",
+        "with",
+    }
+)
 
 
 class LLMClient(Protocol):
@@ -65,8 +101,9 @@ class HeuristicLLMClient:
             (line for line in prompt.splitlines() if line.startswith("Question:")), ""
         )
         question = question_line.replace("Question:", "", 1).strip().lower()
-        context_lines = [line for line in prompt.splitlines() if line.startswith("[")]
-        if not context_lines:
+        contexts = _parse_context_blocks(prompt)
+        question_terms = _content_terms(question)
+        if not contexts:
             return json.dumps(
                 {
                     "answer_text": "I do not have enough evidence to answer.",
@@ -75,14 +112,12 @@ class HeuristicLLMClient:
                 }
             )
         ranked = sorted(
-            context_lines,
-            key=lambda line: sum(1 for word in question.split() if word in line.lower()),
+            contexts,
+            key=lambda context: _grounding_score(question_terms, context[1]),
             reverse=True,
         )
-        best = ranked[0]
-        citation = best.split("]", 1)[0][1:]
-        content = best.split("]", 1)[1].strip()
-        if sum(1 for word in question.split() if word in content.lower()) == 0:
+        citation, content = ranked[0]
+        if _grounding_score(question_terms, content) < GENERATION_GROUNDING_THRESHOLD:
             return json.dumps(
                 {
                     "answer_text": "I do not have enough evidence to answer.",
@@ -92,6 +127,29 @@ class HeuristicLLMClient:
             )
         answer_text = content.split(".")[0].strip()
         return json.dumps({"answer_text": answer_text, "citations": [citation], "refusal": False})
+
+
+def _content_terms(text: str) -> set[str]:
+    return {term for term in tokenize(text) if term not in GENERATION_STOPWORDS}
+
+
+def _grounding_score(question_terms: set[str], evidence_text: str) -> float:
+    if not question_terms:
+        return 0.0
+    return len(question_terms & _content_terms(evidence_text)) / len(question_terms)
+
+
+def _parse_context_blocks(prompt: str) -> list[tuple[str, str]]:
+    context_section = prompt.split("Contexts:", 1)[-1]
+    matches = re.finditer(
+        r"(?ms)^\[(?P<citation>[^\]]+)\]\s*(?P<content>.*?)(?=^\[[^\]]+\]|\Z)",
+        context_section,
+    )
+    return [
+        (match.group("citation"), match.group("content").strip())
+        for match in matches
+        if match.group("content").strip()
+    ]
 
 
 class OpenAICompatibleLLMClient:

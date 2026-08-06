@@ -47,6 +47,7 @@ Thumbs.db
 # Local project outputs
 .benchmarks/
 artifacts/
+.tmp/
 models/
 mlruns/
 data/raw/
