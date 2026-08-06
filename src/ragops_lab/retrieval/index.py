@@ -8,13 +8,14 @@ from pydantic import BaseModel, Field, model_validator
 
 from ragops_lab.domain import DocumentChunk
 
-from .vector import FakeEmbeddingClient, VectorRetriever
+from .vector import EmbeddingClient, FakeEmbeddingClient, VectorRetriever, build_embedding_client
 
 
 class LocalVectorIndex(BaseModel):
     """Serializable local vector index for deterministic offline retrieval."""
 
     index_version: int = Field(default=1)
+    embedding_provider: str = Field(default="fake")
     embedding_model: str = Field(default="fake-bow")
     vocabulary: list[str] = Field(default_factory=list)
     chunks: list[DocumentChunk] = Field(default_factory=list)
@@ -35,12 +36,22 @@ class LocalVectorIndex(BaseModel):
         return self
 
     @classmethod
-    def build(cls, chunks: list[DocumentChunk]) -> LocalVectorIndex:
+    def build(
+        cls,
+        chunks: list[DocumentChunk],
+        embedding_client: EmbeddingClient | None = None,
+        *,
+        embedding_provider: str = "fake",
+        embedding_model: str = "fake-bow",
+    ) -> LocalVectorIndex:
         """Build a deterministic local vector index from chunks."""
-        embedding_client = FakeEmbeddingClient()
-        vectors = embedding_client.embed_texts([chunk.text for chunk in chunks])
+        client = embedding_client or FakeEmbeddingClient()
+        vectors = client.embed_texts([chunk.text for chunk in chunks])
+        vocabulary = client.vocabulary if isinstance(client, FakeEmbeddingClient) else []
         return cls(
-            vocabulary=embedding_client.vocabulary,
+            embedding_provider=embedding_provider,
+            embedding_model=embedding_model,
+            vocabulary=vocabulary,
             chunks=chunks,
             vectors=vectors,
         )
@@ -57,10 +68,19 @@ class LocalVectorIndex(BaseModel):
             raise FileNotFoundError(f"Vector index not found: {path}")
         return cls.model_validate_json(path.read_text(encoding="utf-8"))
 
-    def as_retriever(self) -> VectorRetriever:
+    def as_retriever(self, embedding_client: EmbeddingClient | None = None) -> VectorRetriever:
         """Rehydrate the index as a vector retriever."""
+        client = embedding_client
+        if client is None and self.embedding_provider == "fake":
+            client = FakeEmbeddingClient(self.vocabulary)
+        if client is None:
+            from ragops_lab.config import EmbeddingSettings
+
+            client = build_embedding_client(
+                EmbeddingSettings(provider=self.embedding_provider, model=self.embedding_model)
+            )
         return VectorRetriever(
             self.chunks,
-            FakeEmbeddingClient(self.vocabulary),
+            client,
             chunk_vectors=self.vectors,
         )

@@ -7,8 +7,14 @@ import pytest
 from typer.testing import CliRunner
 
 from ragops_lab.cli import app
+from ragops_lab.config import LLMSettings
 from ragops_lab.domain import DocumentChunk, RetrievalResult
-from ragops_lab.generation import FakeLLMClient, GenerationService
+from ragops_lab.generation import (
+    FakeLLMClient,
+    GenerationService,
+    HeuristicLLMClient,
+    build_llm_client,
+)
 from ragops_lab.ingestion import save_chunks_jsonl
 
 
@@ -53,6 +59,20 @@ def test_generation_rejects_unknown_citations() -> None:
             _results(),
             model_name="fake",
         )
+
+
+def test_build_llm_client_uses_heuristic_default() -> None:
+    client, model_name = build_llm_client(LLMSettings())
+
+    assert isinstance(client, HeuristicLLMClient)
+    assert model_name == "heuristic-grounded"
+
+
+def test_build_llm_client_requires_openai_compatible_endpoint() -> None:
+    settings = LLMSettings(provider="openai-compatible", model="gpt-test", endpoint=None)
+
+    with pytest.raises(ValueError, match="RAGOPS_LLM_ENDPOINT"):
+        build_llm_client(settings)
 
 
 def test_cli_ask_uses_saved_chunks(tmp_path: Path) -> None:

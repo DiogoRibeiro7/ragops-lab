@@ -10,6 +10,7 @@ from .vector import (
     FakeEmbeddingClient,
     SentenceTransformerEmbeddingClient,
     VectorRetriever,
+    build_embedding_client,
 )
 
 __all__ = [
@@ -19,6 +20,7 @@ __all__ = [
     "FakeEmbeddingClient",
     "SentenceTransformerEmbeddingClient",
     "VectorRetriever",
+    "build_embedding_client",
     "HybridRetriever",
     "LocalVectorIndex",
     "RetrievalGoldenExample",

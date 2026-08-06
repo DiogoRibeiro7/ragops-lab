@@ -8,6 +8,8 @@ from pathlib import Path
 from pydantic import BaseModel, Field, field_validator
 
 RETRIEVAL_MODES = frozenset({"lexical", "vector", "hybrid"})
+LLM_PROVIDERS = frozenset({"heuristic", "openai-compatible"})
+EMBEDDING_PROVIDERS = frozenset({"fake", "sentence-transformers"})
 
 
 class ProjectPaths(BaseModel):
@@ -60,6 +62,60 @@ class ProjectPaths(BaseModel):
         return value
 
 
+class LLMSettings(BaseModel):
+    """LLM provider settings for generation clients."""
+
+    provider: str = Field(default="heuristic")
+    model: str = Field(default="heuristic-grounded", min_length=1)
+    endpoint: str | None = Field(default=None)
+    api_key_env: str = Field(default="OPENAI_API_KEY", min_length=1)
+    timeout_seconds: float = Field(default=30.0, gt=0.0)
+
+    @field_validator("provider")
+    @classmethod
+    def validate_provider(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if normalized not in LLM_PROVIDERS:
+            supported = ", ".join(sorted(LLM_PROVIDERS))
+            raise ValueError(f"Unsupported LLM provider: {value}. Supported: {supported}.")
+        return normalized
+
+
+class EmbeddingSettings(BaseModel):
+    """Embedding provider settings for vector indexing and search."""
+
+    provider: str = Field(default="fake")
+    model: str = Field(default="fake-bow", min_length=1)
+
+    @field_validator("provider")
+    @classmethod
+    def validate_provider(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if normalized not in EMBEDDING_PROVIDERS:
+            supported = ", ".join(sorted(EMBEDDING_PROVIDERS))
+            raise ValueError(f"Unsupported embedding provider: {value}. Supported: {supported}.")
+        return normalized
+
+
+class RetrievalProfile(BaseModel):
+    """Retrieval configuration decoupled from runtime paths."""
+
+    name: str = Field(min_length=1)
+    mode: str = Field(default="lexical")
+    top_k: int = Field(default=5, ge=1)
+    lexical_weight: float = Field(default=0.5, ge=0.0, le=1.0)
+    vector_weight: float = Field(default=0.5, ge=0.0, le=1.0)
+
+    @field_validator("mode")
+    @classmethod
+    def validate_mode(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if normalized not in RETRIEVAL_MODES:
+            supported = ", ".join(sorted(RETRIEVAL_MODES))
+            raise ValueError(f"Unsupported retrieval mode: {value}. Supported: {supported}.")
+        return normalized
+
+
 class RuntimeSettings(BaseModel):
     """Runtime settings shared by notebooks, CLI, and API components."""
 
@@ -71,6 +127,8 @@ class RuntimeSettings(BaseModel):
     api_max_top_k: int = Field(default=20, ge=1)
     api_max_query_chars: int = Field(default=1_000, ge=1)
     api_max_text_chars: int = Field(default=20_000, ge=1)
+    llm: LLMSettings = Field(default_factory=LLMSettings)
+    embeddings: EmbeddingSettings = Field(default_factory=EmbeddingSettings)
     retrieval_profiles: dict[str, RetrievalProfile] = Field(
         default_factory=lambda: {
             "lexical": RetrievalProfile(name="lexical", mode="lexical", top_k=5),
@@ -123,6 +181,17 @@ class RuntimeSettings(BaseModel):
             api_max_top_k=_int_from_env("RAGOPS_API_MAX_TOP_K", 20),
             api_max_query_chars=_int_from_env("RAGOPS_API_MAX_QUERY_CHARS", 1_000),
             api_max_text_chars=_int_from_env("RAGOPS_API_MAX_TEXT_CHARS", 20_000),
+            llm=LLMSettings(
+                provider=os.getenv("RAGOPS_LLM_PROVIDER", "heuristic"),
+                model=os.getenv("RAGOPS_LLM_MODEL", "heuristic-grounded"),
+                endpoint=os.getenv("RAGOPS_LLM_ENDPOINT"),
+                api_key_env=os.getenv("RAGOPS_LLM_API_KEY_ENV", "OPENAI_API_KEY"),
+                timeout_seconds=_float_from_env("RAGOPS_LLM_TIMEOUT_SECONDS", 30.0),
+            ),
+            embeddings=EmbeddingSettings(
+                provider=os.getenv("RAGOPS_EMBEDDING_PROVIDER", "fake"),
+                model=os.getenv("RAGOPS_EMBEDDING_MODEL", "fake-bow"),
+            ),
         )
 
     def resolve_retrieval_profile(
@@ -154,25 +223,6 @@ class RuntimeSettings(BaseModel):
         )
 
 
-class RetrievalProfile(BaseModel):
-    """Retrieval configuration decoupled from runtime paths."""
-
-    name: str = Field(min_length=1)
-    mode: str = Field(default="lexical")
-    top_k: int = Field(default=5, ge=1)
-    lexical_weight: float = Field(default=0.5, ge=0.0, le=1.0)
-    vector_weight: float = Field(default=0.5, ge=0.0, le=1.0)
-
-    @field_validator("mode")
-    @classmethod
-    def validate_mode(cls, value: str) -> str:
-        normalized = value.strip().lower()
-        if normalized not in RETRIEVAL_MODES:
-            supported = ", ".join(sorted(RETRIEVAL_MODES))
-            raise ValueError(f"Unsupported retrieval mode: {value}. Supported: {supported}.")
-        return normalized
-
-
 def _path_from_env(name: str, default: object) -> Path:
     value = os.getenv(name)
     if value:
@@ -190,6 +240,16 @@ def _int_from_env(name: str, default: int) -> int:
         return int(value)
     except ValueError as exc:
         raise ValueError(f"{name} must be an integer.") from exc
+
+
+def _float_from_env(name: str, default: float) -> float:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    try:
+        return float(value)
+    except ValueError as exc:
+        raise ValueError(f"{name} must be a number.") from exc
 
 
 def _bool_from_env(name: str, *, default: bool) -> bool:

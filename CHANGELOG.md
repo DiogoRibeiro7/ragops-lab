@@ -22,6 +22,8 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - Added a persistent local vector index with CLI/API indexing and reload support.
 - Added named retrieval profiles with request-level overrides for mode, `top_k`,
   and hybrid weights.
+- Added configurable LLM and embedding provider settings for CLI/API generation
+  and vector indexing, with deterministic offline defaults preserved.
 
 ## [0.1.4] - 2026-08-05
 

@@ -67,6 +67,11 @@ def test_runtime_settings_can_load_environment_overrides(monkeypatch: MonkeyPatc
     monkeypatch.setenv("RAGOPS_CHUNK_PATH", "custom/chunks.jsonl")
     monkeypatch.setenv("RAGOPS_TRACE_PATH", "custom/traces.jsonl")
     monkeypatch.setenv("RAGOPS_VECTOR_INDEX_PATH", "custom/vector_index.json")
+    monkeypatch.setenv("RAGOPS_LLM_PROVIDER", "openai-compatible")
+    monkeypatch.setenv("RAGOPS_LLM_MODEL", "gpt-test")
+    monkeypatch.setenv("RAGOPS_LLM_ENDPOINT", "https://example.test/v1/chat/completions")
+    monkeypatch.setenv("RAGOPS_EMBEDDING_PROVIDER", "fake")
+    monkeypatch.setenv("RAGOPS_EMBEDDING_MODEL", "fake-test")
     monkeypatch.setenv("RAGOPS_API_MAX_REQUEST_BYTES", "2048")
     monkeypatch.setenv("RAGOPS_API_MAX_TOP_K", "7")
     monkeypatch.setenv("RAGOPS_API_MAX_QUERY_CHARS", "120")
@@ -77,6 +82,11 @@ def test_runtime_settings_can_load_environment_overrides(monkeypatch: MonkeyPatc
     assert settings.paths.chunk_path == Path("custom/chunks.jsonl")
     assert settings.paths.trace_path == Path("custom/traces.jsonl")
     assert settings.paths.vector_index_path == Path("custom/vector_index.json")
+    assert settings.llm.provider == "openai-compatible"
+    assert settings.llm.model == "gpt-test"
+    assert settings.llm.endpoint == "https://example.test/v1/chat/completions"
+    assert settings.embeddings.provider == "fake"
+    assert settings.embeddings.model == "fake-test"
     assert settings.api_max_request_bytes == 2048
     assert settings.api_max_top_k == 7
     assert settings.api_max_query_chars == 120

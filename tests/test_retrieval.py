@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from ragops_lab.config import EmbeddingSettings
 from ragops_lab.domain import DocumentChunk
 from ragops_lab.retrieval import (
     BM25Retriever,
@@ -10,6 +11,7 @@ from ragops_lab.retrieval import (
     LocalVectorIndex,
     RetrievalGoldenExample,
     VectorRetriever,
+    build_embedding_client,
     evaluate_retrieval,
     tokenize,
 )
@@ -70,8 +72,15 @@ def test_local_vector_index_round_trips_and_reloads_retriever(tmp_path: Path) ->
     results = loaded.as_retriever().search("citation support", top_k=1)
 
     assert loaded.embedding_model == "fake-bow"
+    assert loaded.embedding_provider == "fake"
     assert loaded.vocabulary
     assert results[0].chunk.chunk_id == "metrics:0"
+
+
+def test_build_embedding_client_uses_fake_default() -> None:
+    client = build_embedding_client(EmbeddingSettings())
+
+    assert isinstance(client, FakeEmbeddingClient)
 
 
 def test_vector_retriever_rejects_mismatched_precomputed_vectors() -> None:

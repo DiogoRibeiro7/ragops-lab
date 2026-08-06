@@ -26,6 +26,7 @@ The repository includes a working local MVP with:
 - trace summary, filtering, and dashboard inspection views
 - persistent local vector indexing and reload support
 - configurable retrieval profiles for lexical, vector, and hybrid search
+- configurable LLM and embedding providers wired into CLI/API execution paths
 
 ## Recently completed
 
@@ -49,6 +50,8 @@ The repository includes a working local MVP with:
 - Added a persistent local vector index with CLI/API build and reload flows.
 - Added named retrieval profiles with request-level overrides for mode, `top_k`,
   and hybrid weights.
+- Wired configurable LLM and embedding providers into the CLI and API while
+  keeping deterministic offline defaults.
 
 ## Known issues and bugs
 
@@ -96,12 +99,12 @@ fixed before the behaviours they affect are relied on.
 
 ## Milestone 4 — Improve generation and evaluation depth
 
-- Add provider-backed LLM and embedding integrations behind the existing
+- [x] Add provider-backed LLM and embedding integrations behind the existing
   abstractions (the `SentenceTransformerEmbeddingClient` adapter exists but is
-  not wired into the CLI or API defaults).
-- Add stronger claim extraction and evidence matching for faithfulness checks.
-- Add dataset-oriented evaluation commands for repeated benchmark runs.
-- Expand refusal evaluation for unanswerable and weak-context cases.
+  now wired into the CLI and API defaults).
+- [ ] Add stronger claim extraction and evidence matching for faithfulness checks.
+- [ ] Add dataset-oriented evaluation commands for repeated benchmark runs.
+- [ ] Expand refusal evaluation for unanswerable and weak-context cases.
 
 ## Milestone 5 — Product and deployment polish
 
@@ -135,5 +138,4 @@ fixed before the behaviours they affect are relied on.
    run the notebooks under `nbval` in CI.
 2. Harden API safety limits and runtime configuration.
 3. Add persistent retrieval storage instead of relying on in-memory indexing.
-4. Wire real embedding and LLM providers into the CLI and API defaults behind
-   the existing abstractions.
+4. Add stronger faithfulness checks with claim extraction and evidence matching.

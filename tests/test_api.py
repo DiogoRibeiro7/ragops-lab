@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import importlib
 from pathlib import Path
 
 from fastapi.testclient import TestClient
+from pytest import MonkeyPatch
 
 from ragops_lab import __version__
 from ragops_lab.api.app import SETTINGS, TRACE_STORE, app
@@ -256,6 +258,40 @@ def test_api_reports_missing_manual_evaluation_chunk_ids(tmp_path: Path) -> None
     assert response.status_code == 400
     assert response.json()["error"]["code"] == "invalid_request"
     assert "Retrieved chunk ids not found" in response.json()["error"]["message"]
+
+
+def test_api_reports_embedding_provider_runtime_errors(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    client = TestClient(app, raise_server_exceptions=False)
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    (raw_dir / "metrics.txt").write_text(
+        "Faithfulness and citation support are critical RAG metrics.",
+        encoding="utf-8",
+    )
+    chunks_path = tmp_path / "chunks.jsonl"
+    ingest_directory(raw_dir, chunks_path, ChunkingConfig(chunk_size=120, overlap=10))
+    api_app_module = importlib.import_module("ragops_lab.api.app")
+
+    def fail_embedding_provider(_: object) -> object:
+        raise RuntimeError("embedding provider is unavailable")
+
+    monkeypatch.setattr(api_app_module, "build_embedding_client", fail_embedding_provider)
+
+    response = client.post(
+        "/search",
+        json={
+            "query": "citation support",
+            "chunks_path": str(chunks_path),
+            "mode": "vector",
+        },
+    )
+
+    assert response.status_code == 502
+    assert response.json()["error"]["code"] == "provider_error"
+    assert "embedding provider is unavailable" in response.json()["error"]["message"]
 
 
 def test_api_rejects_oversized_request_body() -> None:

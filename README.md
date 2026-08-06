@@ -197,8 +197,9 @@ examples stay aligned with the package code.
 
 ## Runtime Configuration
 
-The API and CLI use local defaults, but runtime paths and API safety limits can
-be overridden with environment variables:
+The API and CLI use deterministic local defaults, but runtime paths, API safety
+limits, LLM providers, and embedding providers can be overridden with
+environment variables:
 
 | Variable | Default |
 | --- | --- |
@@ -212,6 +213,19 @@ be overridden with environment variables:
 | `RAGOPS_API_MAX_TOP_K` | `20` |
 | `RAGOPS_API_MAX_QUERY_CHARS` | `1000` |
 | `RAGOPS_API_MAX_TEXT_CHARS` | `20000` |
+| `RAGOPS_LLM_PROVIDER` | `heuristic` |
+| `RAGOPS_LLM_MODEL` | `heuristic-grounded` |
+| `RAGOPS_LLM_ENDPOINT` | unset |
+| `RAGOPS_LLM_API_KEY_ENV` | `OPENAI_API_KEY` |
+| `RAGOPS_LLM_TIMEOUT_SECONDS` | `30` |
+| `RAGOPS_EMBEDDING_PROVIDER` | `fake` |
+| `RAGOPS_EMBEDDING_MODEL` | `fake-bow` |
+
+`RAGOPS_LLM_PROVIDER=openai-compatible` sends grounded prompts to a configured
+chat-completions endpoint and reads the API key from `RAGOPS_LLM_API_KEY_ENV`.
+`RAGOPS_EMBEDDING_PROVIDER=sentence-transformers` builds and reloads vector
+indexes with the configured local sentence-transformer model; the default
+`fake` provider keeps tests, notebooks, and demos offline and deterministic.
 
 API runtime failures use a stable JSON error envelope:
 
@@ -231,7 +245,7 @@ See [`CONTRIBUTING.md`](CONTRIBUTING.md) for contribution guidelines and [`SECUR
 ## Notes
 
 - The default CLI and API generation path uses a deterministic local heuristic client so the repo works without external model credentials.
-- The vector retrieval layer includes a fake embedding client for tests and an optional `sentence-transformers` adapter for local experimentation.
+- The vector retrieval layer includes a fake embedding client for tests and an optional `sentence-transformers` adapter that can be enabled through runtime settings.
 - PDF ingestion is intentionally optional and exposed through an interface boundary rather than a hard dependency.
 
 ## Portfolio signal

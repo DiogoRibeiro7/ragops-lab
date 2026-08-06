@@ -16,14 +16,14 @@ from ragops_lab import __version__
 from ragops_lab.config import RuntimeSettings
 from ragops_lab.domain import RagTrace, RetrievalResult
 from ragops_lab.evaluation import evaluate_answer
-from ragops_lab.generation import GenerationService, HeuristicLLMClient
+from ragops_lab.generation import GenerationService, build_llm_client
 from ragops_lab.ingestion import ChunkingConfig, ingest_directory, load_chunks_jsonl
 from ragops_lab.retrieval import (
     BM25Retriever,
-    FakeEmbeddingClient,
     HybridRetriever,
     LocalVectorIndex,
     VectorRetriever,
+    build_embedding_client,
 )
 from ragops_lab.tracing import JsonlTraceStore
 
@@ -49,6 +49,12 @@ async def handle_file_not_found(_: Request, exc: FileNotFoundError) -> JSONRespo
 async def handle_value_error(_: Request, exc: ValueError) -> JSONResponse:
     """Return a clear API error for invalid local runtime inputs."""
     return _error_response(400, "invalid_request", str(exc))
+
+
+@app.exception_handler(RuntimeError)
+async def handle_runtime_error(_: Request, exc: RuntimeError) -> JSONResponse:
+    """Return a clear API error for provider runtime failures."""
+    return _error_response(502, "provider_error", str(exc))
 
 
 @app.middleware("http")
@@ -226,7 +232,7 @@ def _search(request: SearchRequest) -> list[RetrievalResult]:
     lexical = BM25Retriever(chunks)
     vector = vector_index.as_retriever() if vector_index else VectorRetriever(
         chunks,
-        FakeEmbeddingClient(),
+        build_embedding_client(SETTINGS.embeddings),
     )
     if profile.mode == "lexical":
         return lexical.search(request.query, top_k=profile.top_k)
@@ -262,7 +268,13 @@ def ingest(request: IngestRequest) -> dict[str, int | str]:
 def index(request: IndexRequest) -> dict[str, int | str]:
     """Build a persistent local vector index from chunk JSONL."""
     chunks = load_chunks_jsonl(Path(request.chunks_path))
-    LocalVectorIndex.build(chunks).save(Path(request.index_path))
+    embedding_client = build_embedding_client(SETTINGS.embeddings)
+    LocalVectorIndex.build(
+        chunks,
+        embedding_client,
+        embedding_provider=SETTINGS.embeddings.provider,
+        embedding_model=SETTINGS.embeddings.model,
+    ).save(Path(request.index_path))
     return {"chunks_indexed": len(chunks), "index_path": request.index_path}
 
 
@@ -277,8 +289,9 @@ def ask(request: AskRequest) -> dict[str, object]:
     """Answer a question using retrieved evidence."""
     started = perf_counter()
     results = _search(request)
-    service = GenerationService(HeuristicLLMClient())
-    answer = service.answer(request.query, results, model_name="heuristic-grounded")
+    llm_client, model_name = build_llm_client(SETTINGS.llm)
+    service = GenerationService(llm_client)
+    answer = service.answer(request.query, results, model_name=model_name)
     evaluation = evaluate_answer(request.query, answer, results)
     trace = RagTrace(
         trace_id=f"trace-{uuid.uuid4().hex[:12]}",

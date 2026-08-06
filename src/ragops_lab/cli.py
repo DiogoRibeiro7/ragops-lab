@@ -11,9 +11,9 @@ from rich.table import Table
 
 from .config import RuntimeSettings
 from .evaluation import evaluate_answer
-from .generation import GenerationService, HeuristicLLMClient
+from .generation import GenerationService, build_llm_client
 from .ingestion import ChunkingConfig, ingest_directory, load_chunks_jsonl
-from .retrieval import BM25Retriever, HybridRetriever, LocalVectorIndex
+from .retrieval import BM25Retriever, HybridRetriever, LocalVectorIndex, build_embedding_client
 
 app = typer.Typer(help="Portfolio project command line interface.")
 console = Console()
@@ -68,7 +68,16 @@ def index(
     if not chunks_path.exists():
         _fail(f"Chunks file not found: {chunks_path}")
     chunk_list = load_chunks_jsonl(chunks_path)
-    LocalVectorIndex.build(chunk_list).save(output_path)
+    try:
+        embedding_client = build_embedding_client(settings.embeddings)
+    except (RuntimeError, ValueError) as exc:
+        _fail(str(exc))
+    LocalVectorIndex.build(
+        chunk_list,
+        embedding_client,
+        embedding_provider=settings.embeddings.provider,
+        embedding_model=settings.embeddings.model,
+    ).save(output_path)
     console.print({"chunks_indexed": len(chunk_list), "out": str(output_path)})
 
 
@@ -119,9 +128,14 @@ def ask(
             lexical_weight=retrieval.lexical_weight,
             vector_weight=retrieval.vector_weight,
         ).search(question, top_k=retrieval.top_k)
-    answer = GenerationService(HeuristicLLMClient()).answer(
-        question, results, model_name="heuristic-grounded"
-    )
+    try:
+        llm_client, model_name = build_llm_client(settings.llm)
+    except (RuntimeError, ValueError) as exc:
+        _fail(str(exc))
+    try:
+        answer = GenerationService(llm_client).answer(question, results, model_name=model_name)
+    except (RuntimeError, ValueError) as exc:
+        _fail(str(exc))
     evaluation = evaluate_answer(question, answer, results)
     table = Table(title="RAG Answer")
     table.add_column("Field")

@@ -3,11 +3,16 @@
 from __future__ import annotations
 
 import json
+import os
+import urllib.error
+import urllib.parse
+import urllib.request
 from dataclasses import dataclass
 from typing import Protocol
 
 from pydantic import BaseModel, Field
 
+from ragops_lab.config import LLMSettings
 from ragops_lab.domain import GeneratedAnswer, RetrievalResult
 
 
@@ -87,6 +92,82 @@ class HeuristicLLMClient:
             )
         answer_text = content.split(".")[0].strip()
         return json.dumps({"answer_text": answer_text, "citations": [citation], "refusal": False})
+
+
+class OpenAICompatibleLLMClient:
+    """HTTP client for OpenAI-compatible chat completion APIs."""
+
+    def __init__(
+        self,
+        *,
+        endpoint: str,
+        api_key: str,
+        model: str,
+        timeout_seconds: float,
+    ) -> None:
+        parsed_endpoint = urllib.parse.urlparse(endpoint)
+        if parsed_endpoint.scheme not in {"http", "https"}:
+            raise ValueError("LLM endpoint must use http or https.")
+        self.endpoint = endpoint
+        self.api_key = api_key
+        self.model = model
+        self.timeout_seconds = timeout_seconds
+
+    def generate(self, prompt: str) -> str:
+        payload = json.dumps(
+            {
+                "model": self.model,
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": 0,
+                "response_format": {"type": "json_object"},
+            }
+        ).encode("utf-8")
+        request = urllib.request.Request(  # noqa: S310
+            self.endpoint,
+            data=payload,
+            headers={
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json",
+            },
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(  # noqa: S310
+                request,
+                timeout=self.timeout_seconds,
+            ) as response:
+                response_payload = json.loads(response.read().decode("utf-8"))
+        except urllib.error.URLError as exc:
+            raise RuntimeError(f"LLM provider request failed: {exc}") from exc
+        choices = response_payload.get("choices", [])
+        if not choices:
+            raise RuntimeError("LLM provider response did not contain choices.")
+        content = choices[0].get("message", {}).get("content")
+        if not isinstance(content, str) or not content.strip():
+            raise RuntimeError("LLM provider response did not contain message content.")
+        return content
+
+
+def build_llm_client(settings: LLMSettings) -> tuple[LLMClient, str]:
+    """Build an LLM client from runtime settings."""
+    if settings.provider == "heuristic":
+        return HeuristicLLMClient(), settings.model
+    if settings.provider == "openai-compatible":
+        if not settings.endpoint:
+            raise ValueError("RAGOPS_LLM_ENDPOINT is required for openai-compatible LLMs.")
+        api_key = os.getenv(settings.api_key_env)
+        if not api_key:
+            raise ValueError(f"{settings.api_key_env} is required for openai-compatible LLMs.")
+        return (
+            OpenAICompatibleLLMClient(
+                endpoint=settings.endpoint,
+                api_key=api_key,
+                model=settings.model,
+                timeout_seconds=settings.timeout_seconds,
+            ),
+            settings.model,
+        )
+    raise ValueError(f"Unsupported LLM provider: {settings.provider}")
 
 
 class GenerationService:

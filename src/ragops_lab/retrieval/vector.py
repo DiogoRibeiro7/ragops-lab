@@ -6,6 +6,7 @@ import math
 from collections import Counter
 from typing import Protocol
 
+from ragops_lab.config import EmbeddingSettings
 from ragops_lab.domain import DocumentChunk, RetrievalResult
 
 from .tokenizer import tokenize
@@ -120,3 +121,12 @@ class VectorRetriever:
             )
             for rank, (chunk, score) in enumerate(scored[:top_k], start=1)
         ]
+
+
+def build_embedding_client(settings: EmbeddingSettings) -> EmbeddingClient:
+    """Build an embedding client from runtime settings."""
+    if settings.provider == "fake":
+        return FakeEmbeddingClient()
+    if settings.provider == "sentence-transformers":
+        return SentenceTransformerEmbeddingClient(settings.model)
+    raise ValueError(f"Unsupported embedding provider: {settings.provider}")
