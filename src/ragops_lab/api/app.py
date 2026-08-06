@@ -115,10 +115,13 @@ class SearchRequest(BaseModel):
     """Search request."""
 
     query: str = Field(min_length=1)
+    profile: str = Field(default="lexical")
     chunks_path: str = Field(default_factory=lambda: str(SETTINGS.paths.chunk_path))
     index_path: str | None = Field(default=None)
-    top_k: int = Field(default=5, ge=1)
-    mode: str = Field(default="lexical")
+    top_k: int | None = Field(default=None, ge=1)
+    mode: str | None = Field(default=None)
+    lexical_weight: float | None = Field(default=None, ge=0.0, le=1.0)
+    vector_weight: float | None = Field(default=None, ge=0.0, le=1.0)
 
     @field_validator("query")
     @classmethod
@@ -129,7 +132,7 @@ class SearchRequest(BaseModel):
             max_chars=SETTINGS.api_max_query_chars,
         )
 
-    @field_validator("chunks_path", "index_path", "mode")
+    @field_validator("profile", "chunks_path", "index_path", "mode")
     @classmethod
     def validate_short_text(cls, value: str | None) -> str | None:
         if value is None:
@@ -138,8 +141,8 @@ class SearchRequest(BaseModel):
 
     @field_validator("top_k")
     @classmethod
-    def validate_top_k(cls, value: int) -> int:
-        if value > SETTINGS.api_max_top_k:
+    def validate_top_k(cls, value: int | None) -> int | None:
+        if value is not None and value > SETTINGS.api_max_top_k:
             raise ValueError(f"top_k must be less than or equal to {SETTINGS.api_max_top_k}.")
         return value
 
@@ -209,8 +212,15 @@ def _validate_text_limit(
 
 
 def _search(request: SearchRequest) -> list[RetrievalResult]:
-    if request.mode not in {"lexical", "vector", "hybrid"}:
-        raise HTTPException(status_code=400, detail=f"Unsupported retrieval mode: {request.mode}")
+    profile = SETTINGS.resolve_retrieval_profile(
+        request.profile,
+        mode=request.mode,
+        top_k=request.top_k,
+        lexical_weight=request.lexical_weight,
+        vector_weight=request.vector_weight,
+    )
+    if profile.top_k > SETTINGS.api_max_top_k:
+        raise ValueError(f"top_k must be less than or equal to {SETTINGS.api_max_top_k}.")
     vector_index = LocalVectorIndex.load(Path(request.index_path)) if request.index_path else None
     chunks = vector_index.chunks if vector_index else load_chunks_jsonl(Path(request.chunks_path))
     lexical = BM25Retriever(chunks)
@@ -218,13 +228,18 @@ def _search(request: SearchRequest) -> list[RetrievalResult]:
         chunks,
         FakeEmbeddingClient(),
     )
-    if request.mode == "lexical":
-        return lexical.search(request.query, top_k=request.top_k)
-    if request.mode == "vector":
-        return vector.search(request.query, top_k=request.top_k)
-    if request.mode == "hybrid":
-        return HybridRetriever(lexical, vector).search(request.query, top_k=request.top_k)
-    raise HTTPException(status_code=400, detail=f"Unsupported retrieval mode: {request.mode}")
+    if profile.mode == "lexical":
+        return lexical.search(request.query, top_k=profile.top_k)
+    if profile.mode == "vector":
+        return vector.search(request.query, top_k=profile.top_k)
+    if profile.mode == "hybrid":
+        return HybridRetriever(
+            lexical,
+            vector,
+            lexical_weight=profile.lexical_weight,
+            vector_weight=profile.vector_weight,
+        ).search(request.query, top_k=profile.top_k)
+    raise HTTPException(status_code=400, detail=f"Unsupported retrieval mode: {profile.mode}")
 
 
 @app.post("/ingest")

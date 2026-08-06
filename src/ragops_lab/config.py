@@ -7,6 +7,8 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field, field_validator
 
+RETRIEVAL_MODES = frozenset({"lexical", "vector", "hybrid"})
+
 
 class ProjectPaths(BaseModel):
     """Filesystem paths used by the project.
@@ -69,6 +71,19 @@ class RuntimeSettings(BaseModel):
     api_max_top_k: int = Field(default=20, ge=1)
     api_max_query_chars: int = Field(default=1_000, ge=1)
     api_max_text_chars: int = Field(default=20_000, ge=1)
+    retrieval_profiles: dict[str, RetrievalProfile] = Field(
+        default_factory=lambda: {
+            "lexical": RetrievalProfile(name="lexical", mode="lexical", top_k=5),
+            "vector": RetrievalProfile(name="vector", mode="vector", top_k=5),
+            "hybrid": RetrievalProfile(
+                name="hybrid",
+                mode="hybrid",
+                top_k=5,
+                lexical_weight=0.5,
+                vector_weight=0.5,
+            ),
+        }
+    )
 
     @classmethod
     def from_env(cls) -> RuntimeSettings:
@@ -109,6 +124,53 @@ class RuntimeSettings(BaseModel):
             api_max_query_chars=_int_from_env("RAGOPS_API_MAX_QUERY_CHARS", 1_000),
             api_max_text_chars=_int_from_env("RAGOPS_API_MAX_TEXT_CHARS", 20_000),
         )
+
+    def resolve_retrieval_profile(
+        self,
+        name: str,
+        *,
+        mode: str | None = None,
+        top_k: int | None = None,
+        lexical_weight: float | None = None,
+        vector_weight: float | None = None,
+    ) -> RetrievalProfile:
+        """Resolve a named profile with optional runtime overrides."""
+        profile = self.retrieval_profiles.get(name)
+        if profile is None:
+            available = ", ".join(sorted(self.retrieval_profiles))
+            raise ValueError(f"Unknown retrieval profile: {name}. Available: {available}.")
+        overrides = {
+            key: value
+            for key, value in {
+                "mode": mode,
+                "top_k": top_k,
+                "lexical_weight": lexical_weight,
+                "vector_weight": vector_weight,
+            }.items()
+            if value is not None
+        }
+        return RetrievalProfile.model_validate(
+            profile.model_dump() | overrides,
+        )
+
+
+class RetrievalProfile(BaseModel):
+    """Retrieval configuration decoupled from runtime paths."""
+
+    name: str = Field(min_length=1)
+    mode: str = Field(default="lexical")
+    top_k: int = Field(default=5, ge=1)
+    lexical_weight: float = Field(default=0.5, ge=0.0, le=1.0)
+    vector_weight: float = Field(default=0.5, ge=0.0, le=1.0)
+
+    @field_validator("mode")
+    @classmethod
+    def validate_mode(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if normalized not in RETRIEVAL_MODES:
+            supported = ", ".join(sorted(RETRIEVAL_MODES))
+            raise ValueError(f"Unsupported retrieval mode: {value}. Supported: {supported}.")
+        return normalized
 
 
 def _path_from_env(name: str, default: object) -> Path:

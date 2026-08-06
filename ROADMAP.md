@@ -25,6 +25,7 @@ The repository includes a working local MVP with:
 - configurable runtime paths and API request safety limits
 - trace summary, filtering, and dashboard inspection views
 - persistent local vector indexing and reload support
+- configurable retrieval profiles for lexical, vector, and hybrid search
 
 ## Recently completed
 
@@ -46,6 +47,8 @@ The repository includes a working local MVP with:
 - Added trace summaries, a filtered `GET /traces` endpoint, and a richer
   dashboard table for trace inspection.
 - Added a persistent local vector index with CLI/API build and reload flows.
+- Added named retrieval profiles with request-level overrides for mode, `top_k`,
+  and hybrid weights.
 
 ## Known issues and bugs
 
@@ -88,8 +91,8 @@ fixed before the behaviours they affect are relied on.
 
 - [x] Add a persistent local vector store for embeddings.
 - [x] Add indexing and reload flows for processed documents and chunks.
-- Separate retrieval configuration from runtime execution paths.
-- Support configurable retrieval profiles for lexical, vector, and hybrid search.
+- [x] Separate retrieval configuration from runtime execution paths.
+- [x] Support configurable retrieval profiles for lexical, vector, and hybrid search.
 
 ## Milestone 4 — Improve generation and evaluation depth
 

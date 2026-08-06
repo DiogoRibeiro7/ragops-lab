@@ -4,7 +4,7 @@ from pathlib import Path
 
 from pytest import MonkeyPatch
 
-from ragops_lab.config import ProjectPaths, RuntimeSettings
+from ragops_lab.config import ProjectPaths, RetrievalProfile, RuntimeSettings
 
 
 def test_runtime_settings_defaults_are_valid() -> None:
@@ -13,6 +13,43 @@ def test_runtime_settings_defaults_are_valid() -> None:
     assert settings.environment == "local"
     assert settings.random_seed >= 0
     assert isinstance(settings.paths, ProjectPaths)
+    assert settings.retrieval_profiles["hybrid"].mode == "hybrid"
+
+
+def test_retrieval_profile_rejects_unsupported_modes() -> None:
+    try:
+        RetrievalProfile(name="bad", mode="rerank")
+    except ValueError as exc:
+        assert "Unsupported retrieval mode" in str(exc)
+    else:
+        raise AssertionError("Expected unsupported retrieval mode to fail.")
+
+
+def test_runtime_settings_resolves_retrieval_profile_overrides() -> None:
+    settings = RuntimeSettings()
+
+    profile = settings.resolve_retrieval_profile(
+        "hybrid",
+        top_k=3,
+        lexical_weight=0.8,
+        vector_weight=0.2,
+    )
+
+    assert profile.mode == "hybrid"
+    assert profile.top_k == 3
+    assert profile.lexical_weight == 0.8
+    assert profile.vector_weight == 0.2
+
+
+def test_runtime_settings_reports_unknown_retrieval_profiles() -> None:
+    settings = RuntimeSettings()
+
+    try:
+        settings.resolve_retrieval_profile("missing")
+    except ValueError as exc:
+        assert "Unknown retrieval profile" in str(exc)
+    else:
+        raise AssertionError("Expected unknown retrieval profile to fail.")
 
 
 def test_project_paths_accept_path_objects() -> None:

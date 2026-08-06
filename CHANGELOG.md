@@ -20,6 +20,8 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
   and invalid runtime inputs.
 - Added trace summaries, filtered trace listing, and a richer dashboard table.
 - Added a persistent local vector index with CLI/API indexing and reload support.
+- Added named retrieval profiles with request-level overrides for mode, `top_k`,
+  and hybrid weights.
 
 ## [0.1.4] - 2026-08-05
 

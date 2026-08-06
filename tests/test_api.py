@@ -114,6 +114,37 @@ def test_api_builds_and_uses_persistent_vector_index(tmp_path: Path) -> None:
     assert search_response.json()[0]["chunk"]["chunk_id"] == "metrics:0"
 
 
+def test_api_search_uses_named_retrieval_profile_with_overrides(tmp_path: Path) -> None:
+    client = TestClient(app)
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    (raw_dir / "apollo.txt").write_text(
+        "Apollo 11 landed on the Moon in 1969.",
+        encoding="utf-8",
+    )
+    chunks_path = tmp_path / "chunks.jsonl"
+    index_path = tmp_path / "vector_index.json"
+    ingest_directory(raw_dir, chunks_path, ChunkingConfig(chunk_size=120, overlap=10))
+    client.post("/index", json={"chunks_path": str(chunks_path), "index_path": str(index_path)})
+
+    response = client.post(
+        "/search",
+        json={
+            "query": "moon landing",
+            "profile": "hybrid",
+            "chunks_path": str(chunks_path),
+            "index_path": str(index_path),
+            "top_k": 1,
+            "lexical_weight": 0.8,
+            "vector_weight": 0.2,
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()[0]["retrieval_method"] == "hybrid"
+    assert response.json()[0]["chunk"]["chunk_id"] == "apollo:0"
+
+
 def test_api_uses_configured_default_chunk_path() -> None:
     assert app.version == __version__
     assert SETTINGS.paths.chunk_path.as_posix() == "data/processed/chunks.jsonl"
@@ -163,6 +194,20 @@ def test_api_rejects_unsupported_retrieval_mode(tmp_path: Path) -> None:
 
     assert response.status_code == 400
     assert "Unsupported retrieval mode" in response.text
+
+
+def test_api_rejects_unknown_retrieval_profile(tmp_path: Path) -> None:
+    client = TestClient(app)
+    chunks_path = tmp_path / "chunks.jsonl"
+    chunks_path.write_text("", encoding="utf-8")
+
+    response = client.post(
+        "/search",
+        json={"query": "moon landing", "chunks_path": str(chunks_path), "profile": "missing"},
+    )
+
+    assert response.status_code == 400
+    assert "Unknown retrieval profile" in response.text
 
 
 def test_api_reports_missing_chunks_file() -> None:

@@ -63,7 +63,7 @@ and reload it at query time:
 
 ```bash
 poetry run ragops-lab index --chunks data/processed/chunks.jsonl --out artifacts/index/vector_index.json
-poetry run ragops-lab ask "What does citation support measure?" --mode vector --index-path artifacts/index/vector_index.json
+poetry run ragops-lab ask "What does citation support measure?" --profile vector --index-path artifacts/index/vector_index.json
 ```
 
 ### 4. Run the API
@@ -149,6 +149,11 @@ The design principle is evaluation-first development: every generated answer sho
 Trace inspection is available through `GET /traces`, `GET /traces/{id}`, and
 `GET /dashboard`. The list and dashboard views support `q`, `min_faithfulness`,
 and `limit` filters for local debugging and demo review.
+
+Retrieval behavior is configured through named profiles rather than hard-coded
+runtime branches. The built-in profiles are `lexical`, `vector`, and `hybrid`;
+requests can still override `top_k`, `mode`, `lexical_weight`, and
+`vector_weight` when needed.
 
 ## Project structure
 

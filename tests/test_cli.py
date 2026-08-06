@@ -54,6 +54,8 @@ def test_cli_builds_index_and_asks_with_vector_mode(tmp_path: Path) -> None:
             str(chunks_path),
             "--index-path",
             str(index_path),
+            "--profile",
+            "vector",
             "--mode",
             "vector",
         ],
@@ -63,3 +65,17 @@ def test_cli_builds_index_and_asks_with_vector_mode(tmp_path: Path) -> None:
     assert index_path.exists()
     assert ask_result.exit_code == 0
     assert "Faithfulness" in ask_result.output
+
+
+def test_cli_reports_unknown_retrieval_profile(tmp_path: Path) -> None:
+    runner = CliRunner()
+    chunks_path = tmp_path / "chunks.jsonl"
+    chunks_path.write_text("", encoding="utf-8")
+
+    result = runner.invoke(
+        app,
+        ["ask", "What happened?", "--chunks", str(chunks_path), "--profile", "missing"],
+    )
+
+    assert result.exit_code == 1
+    assert "Unknown retrieval profile" in result.output
