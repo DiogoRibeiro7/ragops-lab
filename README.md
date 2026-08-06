@@ -165,7 +165,12 @@ Or run individual gates:
 make lint
 make typecheck
 make test
+make rag-eval
 ```
+
+`make rag-eval` runs the deterministic RAG evaluation regression gate against
+the bundled golden set and writes JSON, CSV, and Markdown reports to
+`artifacts/evaluation`.
 
 Pre-commit hooks are available:
 

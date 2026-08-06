@@ -19,6 +19,8 @@ The repository includes a working local MVP with:
 - an analytical notebook suite (retrieval tuning, strategy comparison, grounded generation, end-to-end evaluation) built on package code, committed with executed outputs and figures
 - automated linting, type-checking, and test coverage (~90%)
 - CI coverage across Python 3.11 and 3.12
+- CI-backed deterministic RAG evaluation regression checks with persisted
+  artifacts
 
 ## Recently completed
 
@@ -28,6 +30,9 @@ The repository includes a working local MVP with:
   ignoring `ChunkingConfig.strategy`.
 - Added professional repository hygiene: license, contribution guide, security
   policy, pre-commit hooks, Docker build hygiene, and improved CI.
+- Added a deterministic RAG evaluation regression gate with faithfulness and
+  citation-support thresholds, JSON/CSV/Markdown artifacts, and CI artifact
+  upload.
 
 ## Known issues and bugs
 
@@ -50,14 +55,14 @@ fixed before the behaviours they affect are relied on.
 
 ## Milestone 1 — Complete the evaluation pipeline
 
-- Add a dedicated CI job for regression-style RAG evaluation (the notebook 04
-  gate logic, lifted into a runnable script).
-- Enforce failure thresholds for faithfulness and citation support.
-- Persist evaluation outputs to `artifacts/evaluation`.
-- Upload evaluation artifacts from CI for inspection.
-- Execute the notebooks in CI with `nbval` (already a dev dependency) so they
+- [x] Add a dedicated CI job for regression-style RAG evaluation (the notebook
+  04 gate logic, lifted into a runnable script).
+- [x] Enforce failure thresholds for faithfulness and citation support.
+- [x] Persist evaluation outputs to `artifacts/evaluation`.
+- [x] Upload evaluation artifacts from CI for inspection.
+- [ ] Execute the notebooks in CI with `nbval` (already a dev dependency) so they
   cannot silently rot.
-- Add clearer reporting for retrieval metrics and answer-quality metrics.
+- [x] Add clearer reporting for retrieval metrics and answer-quality metrics.
 
 ## Milestone 2 — Strengthen runtime and API behavior
 

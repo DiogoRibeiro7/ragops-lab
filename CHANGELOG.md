@@ -5,6 +5,15 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Added a deterministic RAG evaluation regression gate with JSON, CSV, and
+  Markdown artifacts.
+- Added a dedicated GitHub Actions job that uploads evaluation artifacts from
+  CI.
+
 ## [0.1.4] - 2026-08-05
 
 ### Changed
@@ -75,6 +84,7 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - Updated `GitPython` to a patched version to clear Dependabot advisories.
 - Fixed GitHub Actions and branch protection check naming for the Python matrix.
 
+[Unreleased]: https://github.com/DiogoRibeiro7/ragops-lab/compare/v0.1.4...HEAD
 [0.1.4]: https://github.com/DiogoRibeiro7/ragops-lab/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/DiogoRibeiro7/ragops-lab/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/DiogoRibeiro7/ragops-lab/compare/v0.1.1...v0.1.2
