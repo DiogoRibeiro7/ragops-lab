@@ -42,3 +42,38 @@ class RagTrace(BaseModel):
     @classmethod
     def validate_created_at(cls, value: datetime) -> datetime:
         return ensure_aware_timestamp(value)
+
+
+class RagTraceSummary(BaseModel):
+    """Compact trace representation for list views and dashboards."""
+
+    trace_id: str
+    question: str
+    model_name: str
+    created_at: datetime
+    latency_ms: float = Field(ge=0.0)
+    token_estimate: int = Field(ge=0)
+    retrieved_chunk_count: int = Field(ge=0)
+    faithfulness: float | None = Field(default=None, ge=0.0, le=1.0)
+    citation_support: float | None = Field(default=None, ge=0.0, le=1.0)
+    answer_relevance: float | None = Field(default=None, ge=0.0, le=1.0)
+    grounded: bool
+    refusal: bool
+
+    @classmethod
+    def from_trace(cls, trace: RagTrace) -> RagTraceSummary:
+        """Build a compact summary from a full trace."""
+        return cls(
+            trace_id=trace.trace_id,
+            question=trace.question,
+            model_name=trace.model_name,
+            created_at=trace.created_at,
+            latency_ms=trace.latency_ms,
+            token_estimate=trace.token_estimate,
+            retrieved_chunk_count=len(trace.retrieved_chunks),
+            faithfulness=trace.evaluation.faithfulness if trace.evaluation else None,
+            citation_support=trace.evaluation.citation_support if trace.evaluation else None,
+            answer_relevance=trace.evaluation.answer_relevance if trace.evaluation else None,
+            grounded=trace.answer.grounded,
+            refusal=trace.answer.refusal,
+        )

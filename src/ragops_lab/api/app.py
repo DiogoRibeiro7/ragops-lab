@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Awaitable, Callable
+from html import escape
 from pathlib import Path
 from time import perf_counter
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 from pydantic import BaseModel, Field, field_validator
 
@@ -287,6 +288,21 @@ def evaluate(request: EvaluateRequest) -> dict[str, object]:
     return report.model_dump(mode="json")
 
 
+@app.get("/traces")
+def list_traces(
+    q: str | None = Query(default=None, max_length=SETTINGS.api_max_query_chars),
+    min_faithfulness: float | None = Query(default=None, ge=0.0, le=1.0),
+    limit: int = Query(default=50, ge=1, le=SETTINGS.api_max_top_k * 5),
+) -> list[dict[str, object]]:
+    """List trace summaries with optional filters."""
+    summaries = TRACE_STORE.list_summaries(
+        query=q,
+        min_faithfulness=min_faithfulness,
+        limit=limit,
+    )
+    return [summary.model_dump(mode="json") for summary in summaries]
+
+
 @app.get("/traces/{trace_id}")
 def get_trace(trace_id: str) -> dict[str, object]:
     """Fetch a single trace."""
@@ -297,18 +313,63 @@ def get_trace(trace_id: str) -> dict[str, object]:
 
 
 @app.get("/dashboard", response_class=HTMLResponse)
-def dashboard() -> str:
-    """Render a minimal trace dashboard."""
-    traces = TRACE_STORE.list()
-    items = "\n".join(
-        f"<li><strong>{trace.trace_id}</strong>: {trace.question} "
-        f"(faithfulness={trace.evaluation.faithfulness if trace.evaluation else 'n/a':.2f})</li>"
-        if trace.evaluation is not None
-        else f"<li><strong>{trace.trace_id}</strong>: {trace.question}</li>"
-        for trace in traces
+def dashboard(
+    q: str | None = Query(default=None, max_length=SETTINGS.api_max_query_chars),
+    min_faithfulness: float | None = Query(default=None, ge=0.0, le=1.0),
+    limit: int = Query(default=25, ge=1, le=SETTINGS.api_max_top_k * 5),
+) -> str:
+    """Render a trace dashboard with filtering and summary metrics."""
+    summaries = TRACE_STORE.list_summaries(
+        query=q,
+        min_faithfulness=min_faithfulness,
+        limit=limit,
     )
+    rows = "\n".join(
+        "<tr>"
+        f"<td><a href=\"/traces/{escape(summary.trace_id)}\">{escape(summary.trace_id)}</a></td>"
+        f"<td>{escape(summary.question)}</td>"
+        f"<td>{escape(summary.model_name)}</td>"
+        f"<td>{summary.retrieved_chunk_count}</td>"
+        f"<td>{_format_optional_score(summary.faithfulness)}</td>"
+        f"<td>{_format_optional_score(summary.citation_support)}</td>"
+        f"<td>{summary.latency_ms:.1f}</td>"
+        f"<td>{summary.token_estimate}</td>"
+        f"<td>{escape(summary.created_at.isoformat())}</td>"
+        "</tr>"
+        for summary in summaries
+    )
+    query_value = escape(q or "")
+    faithfulness_value = "" if min_faithfulness is None else f"{min_faithfulness:.2f}"
+    empty_row = '<tr><td colspan="9">No traces found.</td></tr>'
     return (
-        "<html><body><h1>RAGOps Traces</h1><ul>"
-        f"{items or '<li>No traces yet.</li>'}"
-        "</ul></body></html>"
+        "<html><head><title>RAGOps Traces</title>"
+        "<style>"
+        "body{font-family:Arial,sans-serif;margin:2rem;color:#1f2933;}"
+        "form{display:flex;gap:.75rem;align-items:end;margin-bottom:1rem;flex-wrap:wrap;}"
+        "label{display:flex;flex-direction:column;font-size:.85rem;font-weight:600;}"
+        "input{padding:.45rem;border:1px solid #b8c2cc;border-radius:4px;}"
+        "button{padding:.5rem .75rem;border:1px solid #1f2933;background:#1f2933;color:white;"
+        "border-radius:4px;}"
+        "table{border-collapse:collapse;width:100%;font-size:.9rem;}"
+        "th,td{border-bottom:1px solid #d9e2ec;padding:.55rem;text-align:left;vertical-align:top;}"
+        "th{background:#f0f4f8;}"
+        "</style></head><body><h1>RAGOps Traces</h1>"
+        "<form method=\"get\">"
+        f"<label>Search<input name=\"q\" value=\"{query_value}\" /></label>"
+        "<label>Min faithfulness"
+        f"<input name=\"min_faithfulness\" value=\"{faithfulness_value}\" /></label>"
+        f"<label>Limit<input name=\"limit\" value=\"{limit}\" /></label>"
+        "<button type=\"submit\">Apply</button>"
+        "</form>"
+        "<table><thead><tr><th>Trace</th><th>Question</th><th>Model</th>"
+        "<th>Chunks</th><th>Faithfulness</th><th>Citation</th><th>Latency ms</th>"
+        "<th>Tokens</th><th>Created</th></tr></thead><tbody>"
+        f"{rows or empty_row}"
+        "</tbody></table></body></html>"
     )
+
+
+def _format_optional_score(value: float | None) -> str:
+    if value is None:
+        return "n/a"
+    return f"{value:.2f}"

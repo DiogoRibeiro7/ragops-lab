@@ -32,9 +32,16 @@ def test_api_end_to_end(tmp_path: Path) -> None:
     assert ask_response.status_code == 200
     trace_id = ask_response.json()["trace_id"]
     trace_response = client.get(f"/traces/{trace_id}")
+    traces_response = client.get("/traces", params={"q": "moon", "min_faithfulness": 0.0})
+    dashboard_response = client.get("/dashboard", params={"q": "moon"})
 
     assert trace_response.status_code == 200
     assert trace_response.json()["trace_id"] == trace_id
+    assert traces_response.status_code == 200
+    assert traces_response.json()[0]["trace_id"] == trace_id
+    assert dashboard_response.status_code == 200
+    assert "RAGOps Traces" in dashboard_response.text
+    assert trace_id in dashboard_response.text
 
 
 def test_api_ingest_and_evaluate_endpoints(tmp_path: Path) -> None:

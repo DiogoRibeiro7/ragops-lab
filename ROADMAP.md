@@ -23,6 +23,7 @@ The repository includes a working local MVP with:
   artifacts
 - notebook execution checks in CI with `nbval`
 - configurable runtime paths and API request safety limits
+- trace summary, filtering, and dashboard inspection views
 
 ## Recently completed
 
@@ -41,6 +42,8 @@ The repository includes a working local MVP with:
 - Added API request-size, query-length, text-length, and `top_k` guards.
 - Added structured API errors and clearer CLI exits for missing files,
   unsupported inputs, and invalid evaluation requests.
+- Added trace summaries, a filtered `GET /traces` endpoint, and a richer
+  dashboard table for trace inspection.
 
 ## Known issues and bugs
 
@@ -77,7 +80,7 @@ fixed before the behaviours they affect are relied on.
 - [x] Add request-size and payload-size guards to the API surface.
 - [x] Make runtime paths and storage locations configurable through environment settings.
 - [x] Improve error responses and validation messages across API and CLI entrypoints.
-- Add better trace summaries, filtering, and inspection views in the dashboard.
+- [x] Add better trace summaries, filtering, and inspection views in the dashboard.
 
 ## Milestone 3 — Move beyond in-memory retrieval
 

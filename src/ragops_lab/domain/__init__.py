@@ -5,7 +5,7 @@ from .chunk import DocumentChunk
 from .document import Document
 from .evaluation import EvaluationResult
 from .retrieval import RetrievalResult
-from .trace import RagTrace
+from .trace import RagTrace, RagTraceSummary
 
 __all__ = [
     "Document",
@@ -14,4 +14,5 @@ __all__ = [
     "GeneratedAnswer",
     "EvaluationResult",
     "RagTrace",
+    "RagTraceSummary",
 ]

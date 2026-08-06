@@ -70,6 +70,7 @@ Then use:
 - `POST /search`
 - `POST /ask`
 - `POST /evaluate`
+- `GET /traces`
 - `GET /traces/{id}`
 - `GET /dashboard`
 
@@ -135,6 +136,10 @@ Raw documents
 ```
 
 The design principle is evaluation-first development: every generated answer should be linked to retrieved evidence, validated for citations, and measurable through explicit metrics. See [`docs/architecture.md`](docs/architecture.md) for more detail.
+
+Trace inspection is available through `GET /traces`, `GET /traces/{id}`, and
+`GET /dashboard`. The list and dashboard views support `q`, `min_faithfulness`,
+and `limit` filters for local debugging and demo review.
 
 ## Project structure
 
