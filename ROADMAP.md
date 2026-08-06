@@ -21,6 +21,7 @@ The repository includes a working local MVP with:
 - CI coverage across Python 3.11 and 3.12
 - CI-backed deterministic RAG evaluation regression checks with persisted
   artifacts
+- notebook execution checks in CI with `nbval`
 
 ## Recently completed
 
@@ -33,6 +34,7 @@ The repository includes a working local MVP with:
 - Added a deterministic RAG evaluation regression gate with faithfulness and
   citation-support thresholds, JSON/CSV/Markdown artifacts, and CI artifact
   upload.
+- Added notebook execution checks in CI with `nbval`.
 
 ## Known issues and bugs
 
@@ -60,7 +62,7 @@ fixed before the behaviours they affect are relied on.
 - [x] Enforce failure thresholds for faithfulness and citation support.
 - [x] Persist evaluation outputs to `artifacts/evaluation`.
 - [x] Upload evaluation artifacts from CI for inspection.
-- [ ] Execute the notebooks in CI with `nbval` (already a dev dependency) so they
+- [x] Execute the notebooks in CI with `nbval` (already a dev dependency) so they
   cannot silently rot.
 - [x] Add clearer reporting for retrieval metrics and answer-quality metrics.
 

@@ -166,11 +166,15 @@ make lint
 make typecheck
 make test
 make rag-eval
+make notebook-check
 ```
 
 `make rag-eval` runs the deterministic RAG evaluation regression gate against
 the bundled golden set and writes JSON, CSV, and Markdown reports to
 `artifacts/evaluation`.
+
+`make notebook-check` executes the committed notebooks with `nbval` so notebook
+examples stay aligned with the package code.
 
 Pre-commit hooks are available:
 

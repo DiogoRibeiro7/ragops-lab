@@ -13,6 +13,7 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
   Markdown artifacts.
 - Added a dedicated GitHub Actions job that uploads evaluation artifacts from
   CI.
+- Added notebook execution checks with `nbval` in CI.
 
 ## [0.1.4] - 2026-08-05
 

@@ -44,3 +44,17 @@ jobs:
         with:
           name: rag-evaluation
           path: artifacts/evaluation
+
+  notebooks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Install Poetry
+        run: pipx install poetry
+      - name: Install dependencies
+        run: poetry install --with dev
+      - name: Execute notebooks with nbval
+        run: make notebook-check

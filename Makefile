@@ -1,4 +1,4 @@
-.PHONY: install lint typecheck test format check rag-eval release-check pre-commit run
+.PHONY: install lint typecheck test format check rag-eval notebook-check release-check pre-commit run
 
 install:
 	poetry install --with dev
@@ -19,6 +19,9 @@ check: lint typecheck test
 
 rag-eval:
 	poetry run python scripts/evaluate_rag.py
+
+notebook-check:
+	poetry run pytest --nbval-lax --no-cov notebooks -q
 
 release-check: check pre-commit
 	poetry check
