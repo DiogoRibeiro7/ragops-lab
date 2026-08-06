@@ -207,22 +207,14 @@ def run_benchmark(
         run_count=divisor,
         case_count=benchmark_runs[0].summary.case_count if benchmark_runs else 0,
         top_k=top_k,
-        average_recall_at_k=sum(
-            run.summary.average_recall_at_k for run in benchmark_runs
-        )
+        average_recall_at_k=sum(run.summary.average_recall_at_k for run in benchmark_runs)
         / divisor,
-        mean_reciprocal_rank=sum(
-            run.summary.mean_reciprocal_rank for run in benchmark_runs
-        )
+        mean_reciprocal_rank=sum(run.summary.mean_reciprocal_rank for run in benchmark_runs)
         / divisor,
-        average_faithfulness=sum(
-            run.summary.average_faithfulness for run in benchmark_runs
-        )
+        average_faithfulness=sum(run.summary.average_faithfulness for run in benchmark_runs)
         / divisor,
         lowest_run_faithfulness=min(run.summary.average_faithfulness for run in benchmark_runs),
-        average_citation_support=sum(
-            run.summary.average_citation_support for run in benchmark_runs
-        )
+        average_citation_support=sum(run.summary.average_citation_support for run in benchmark_runs)
         / divisor,
         lowest_run_citation_support=min(
             run.summary.average_citation_support for run in benchmark_runs

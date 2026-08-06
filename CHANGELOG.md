@@ -7,6 +7,8 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-08-06
+
 ### Added
 
 - Added a deterministic RAG evaluation regression gate with JSON, CSV, and
@@ -28,6 +30,10 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
   unsupported-claim details, and stricter numeric mismatch detection.
 - Added a reusable dataset benchmark runner, repeated-run benchmark artifacts,
   and a `ragops-lab benchmark` CLI command.
+
+### Changed
+
+- Bumped package, module, Zenodo, and citation metadata versions to `0.2.0`.
 
 ## [0.1.4] - 2026-08-05
 
@@ -99,7 +105,8 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - Updated `GitPython` to a patched version to clear Dependabot advisories.
 - Fixed GitHub Actions and branch protection check naming for the Python matrix.
 
-[Unreleased]: https://github.com/DiogoRibeiro7/ragops-lab/compare/v0.1.4...HEAD
+[Unreleased]: https://github.com/DiogoRibeiro7/ragops-lab/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/DiogoRibeiro7/ragops-lab/compare/v0.1.4...v0.2.0
 [0.1.4]: https://github.com/DiogoRibeiro7/ragops-lab/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/DiogoRibeiro7/ragops-lab/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/DiogoRibeiro7/ragops-lab/compare/v0.1.1...v0.1.2

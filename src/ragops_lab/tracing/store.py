@@ -52,8 +52,7 @@ class JsonlTraceStore:
             summaries = [
                 summary
                 for summary in summaries
-                if summary.faithfulness is not None
-                and summary.faithfulness >= min_faithfulness
+                if summary.faithfulness is not None and summary.faithfulness >= min_faithfulness
             ]
         return summaries[:limit]
 

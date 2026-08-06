@@ -83,10 +83,7 @@ async def enforce_request_size(
         return _error_response(
             413,
             "request_too_large",
-            (
-                "Request body is too large. "
-                f"Maximum size is {SETTINGS.api_max_request_bytes} bytes."
-            ),
+            (f"Request body is too large. Maximum size is {SETTINGS.api_max_request_bytes} bytes."),
         )
     return await call_next(request)
 
@@ -230,9 +227,13 @@ def _search(request: SearchRequest) -> list[RetrievalResult]:
     vector_index = LocalVectorIndex.load(Path(request.index_path)) if request.index_path else None
     chunks = vector_index.chunks if vector_index else load_chunks_jsonl(Path(request.chunks_path))
     lexical = BM25Retriever(chunks)
-    vector = vector_index.as_retriever() if vector_index else VectorRetriever(
-        chunks,
-        build_embedding_client(SETTINGS.embeddings),
+    vector = (
+        vector_index.as_retriever()
+        if vector_index
+        else VectorRetriever(
+            chunks,
+            build_embedding_client(SETTINGS.embeddings),
+        )
     )
     if profile.mode == "lexical":
         return lexical.search(request.query, top_k=profile.top_k)
@@ -382,7 +383,7 @@ def dashboard(
     )
     rows = "\n".join(
         "<tr>"
-        f"<td><a href=\"/traces/{escape(summary.trace_id)}\">{escape(summary.trace_id)}</a></td>"
+        f'<td><a href="/traces/{escape(summary.trace_id)}">{escape(summary.trace_id)}</a></td>'
         f"<td>{escape(summary.question)}</td>"
         f"<td>{escape(summary.model_name)}</td>"
         f"<td>{summary.retrieved_chunk_count}</td>"
@@ -410,12 +411,12 @@ def dashboard(
         "th,td{border-bottom:1px solid #d9e2ec;padding:.55rem;text-align:left;vertical-align:top;}"
         "th{background:#f0f4f8;}"
         "</style></head><body><h1>RAGOps Traces</h1>"
-        "<form method=\"get\">"
-        f"<label>Search<input name=\"q\" value=\"{query_value}\" /></label>"
+        '<form method="get">'
+        f'<label>Search<input name="q" value="{query_value}" /></label>'
         "<label>Min faithfulness"
-        f"<input name=\"min_faithfulness\" value=\"{faithfulness_value}\" /></label>"
-        f"<label>Limit<input name=\"limit\" value=\"{limit}\" /></label>"
-        "<button type=\"submit\">Apply</button>"
+        f'<input name="min_faithfulness" value="{faithfulness_value}" /></label>'
+        f'<label>Limit<input name="limit" value="{limit}" /></label>'
+        '<button type="submit">Apply</button>'
         "</form>"
         "<table><thead><tr><th>Trace</th><th>Question</th><th>Model</th>"
         "<th>Chunks</th><th>Faithfulness</th><th>Citation</th><th>Latency ms</th>"

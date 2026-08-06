@@ -89,8 +89,7 @@ def test_claim_support_flags_hallucinated_claims() -> None:
     answer = GeneratedAnswer(
         question="What happened on Apollo 11?",
         answer_text=(
-            "Apollo 11 landed humans on the Moon in 1969. "
-            "Buzz Aldrin commanded the mission."
+            "Apollo 11 landed humans on the Moon in 1969. Buzz Aldrin commanded the mission."
         ),
         citations=["apollo:0"],
         model_name="heuristic",

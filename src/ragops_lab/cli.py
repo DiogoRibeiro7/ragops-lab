@@ -114,9 +114,13 @@ def ask(
         chunk_list = load_chunks_jsonl(chunks_path)
         results = BM25Retriever(chunk_list).search(question, top_k=retrieval.top_k)
     elif retrieval.mode == "vector":
-        results = LocalVectorIndex.load(vector_index_path).as_retriever().search(
-            question,
-            top_k=retrieval.top_k,
+        results = (
+            LocalVectorIndex.load(vector_index_path)
+            .as_retriever()
+            .search(
+                question,
+                top_k=retrieval.top_k,
+            )
         )
     else:
         chunk_list = load_chunks_jsonl(chunks_path)
