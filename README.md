@@ -193,6 +193,12 @@ be overridden with environment variables:
 | `RAGOPS_API_MAX_QUERY_CHARS` | `1000` |
 | `RAGOPS_API_MAX_TEXT_CHARS` | `20000` |
 
+API runtime failures use a stable JSON error envelope:
+
+```json
+{"error": {"code": "resource_not_found", "message": "Input directory not found: data/raw"}}
+```
+
 Pre-commit hooks are available:
 
 ```bash

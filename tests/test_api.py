@@ -125,6 +125,54 @@ def test_api_rejects_unsupported_retrieval_mode(tmp_path: Path) -> None:
     assert "Unsupported retrieval mode" in response.text
 
 
+def test_api_reports_missing_chunks_file() -> None:
+    client = TestClient(app)
+    response = client.post(
+        "/search",
+        json={"query": "moon landing", "chunks_path": "missing/chunks.jsonl"},
+    )
+
+    assert response.status_code == 404
+    assert response.json()["error"]["code"] == "resource_not_found"
+    assert "missing" in response.json()["error"]["message"]
+
+
+def test_api_reports_missing_ingest_directory(tmp_path: Path) -> None:
+    client = TestClient(app)
+    missing_dir = tmp_path / "missing"
+    response = client.post(
+        "/ingest",
+        json={"input_dir": str(missing_dir), "out_path": str(tmp_path / "chunks.jsonl")},
+    )
+
+    assert response.status_code == 404
+    assert response.json()["error"]["code"] == "resource_not_found"
+    assert "Input directory not found" in response.json()["error"]["message"]
+
+
+def test_api_reports_missing_manual_evaluation_chunk_ids(tmp_path: Path) -> None:
+    client = TestClient(app)
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    (raw_dir / "apollo.txt").write_text("Apollo 11 landed on the Moon.", encoding="utf-8")
+    chunks_path = tmp_path / "chunks.jsonl"
+    ingest_directory(raw_dir, chunks_path, ChunkingConfig(chunk_size=120, overlap=10))
+
+    response = client.post(
+        "/evaluate",
+        json={
+            "question": "Which mission landed on the Moon?",
+            "answer_text": "Apollo 11 landed on the Moon.",
+            "chunks_path": str(chunks_path),
+            "retrieved_chunk_ids": ["missing:0"],
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.json()["error"]["code"] == "invalid_request"
+    assert "Retrieved chunk ids not found" in response.json()["error"]["message"]
+
+
 def test_api_rejects_oversized_request_body() -> None:
     client = TestClient(app)
     response = client.post(

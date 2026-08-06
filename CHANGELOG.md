@@ -16,6 +16,8 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - Added notebook execution checks with `nbval` in CI.
 - Added environment-backed runtime settings for project paths and API limits.
 - Added API request-size, query-length, text-length, and `top_k` guards.
+- Added structured API errors and clearer CLI exits for missing local resources
+  and invalid runtime inputs.
 
 ## [0.1.4] - 2026-08-05
 

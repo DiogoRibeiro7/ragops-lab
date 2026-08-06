@@ -30,6 +30,25 @@ SETTINGS = RuntimeSettings.from_env()
 app = FastAPI(title="RAGOps Lab API", version=__version__)
 
 
+def _error_response(status_code: int, code: str, message: str) -> JSONResponse:
+    return JSONResponse(
+        status_code=status_code,
+        content={"error": {"code": code, "message": message}},
+    )
+
+
+@app.exception_handler(FileNotFoundError)
+async def handle_file_not_found(_: Request, exc: FileNotFoundError) -> JSONResponse:
+    """Return a clear API error when a configured local file is missing."""
+    return _error_response(404, "resource_not_found", str(exc))
+
+
+@app.exception_handler(ValueError)
+async def handle_value_error(_: Request, exc: ValueError) -> JSONResponse:
+    """Return a clear API error for invalid local runtime inputs."""
+    return _error_response(400, "invalid_request", str(exc))
+
+
 @app.middleware("http")
 async def enforce_request_size(
     request: Request,
@@ -41,30 +60,25 @@ async def enforce_request_size(
         try:
             declared_size = int(content_length)
         except ValueError:
-            return JSONResponse(
-                status_code=400,
-                content={"detail": "Invalid Content-Length header."},
-            )
+            return _error_response(400, "invalid_header", "Invalid Content-Length header.")
         if declared_size > SETTINGS.api_max_request_bytes:
-            return JSONResponse(
-                status_code=413,
-                content={
-                    "detail": (
-                        "Request body is too large. "
-                        f"Maximum size is {SETTINGS.api_max_request_bytes} bytes."
-                    )
-                },
+            return _error_response(
+                413,
+                "request_too_large",
+                (
+                    "Request body is too large. "
+                    f"Maximum size is {SETTINGS.api_max_request_bytes} bytes."
+                ),
             )
     body = await request.body()
     if len(body) > SETTINGS.api_max_request_bytes:
-        return JSONResponse(
-            status_code=413,
-            content={
-                "detail": (
-                    "Request body is too large. "
-                    f"Maximum size is {SETTINGS.api_max_request_bytes} bytes."
-                )
-            },
+        return _error_response(
+            413,
+            "request_too_large",
+            (
+                "Request body is too large. "
+                f"Maximum size is {SETTINGS.api_max_request_bytes} bytes."
+            ),
         )
     return await call_next(request)
 
@@ -178,6 +192,8 @@ def _validate_text_limit(
 
 
 def _search(request: SearchRequest) -> list[RetrievalResult]:
+    if request.mode not in {"lexical", "vector", "hybrid"}:
+        raise HTTPException(status_code=400, detail=f"Unsupported retrieval mode: {request.mode}")
     chunks = load_chunks_jsonl(Path(request.chunks_path))
     lexical = BM25Retriever(chunks)
     vector = VectorRetriever(chunks, FakeEmbeddingClient())
@@ -193,8 +209,13 @@ def _search(request: SearchRequest) -> list[RetrievalResult]:
 @app.post("/ingest")
 def ingest(request: IngestRequest) -> dict[str, int | str]:
     """Ingest local files into chunk JSONL."""
+    input_dir = Path(request.input_dir)
+    if not input_dir.exists():
+        raise FileNotFoundError(f"Input directory not found: {input_dir}")
+    if not input_dir.is_dir():
+        raise ValueError(f"Input path is not a directory: {input_dir}")
     chunks = ingest_directory(
-        Path(request.input_dir),
+        input_dir,
         Path(request.out_path),
         config=ChunkingConfig(chunk_size=request.chunk_size, overlap=request.overlap),
     )
@@ -237,6 +258,9 @@ def ask(request: AskRequest) -> dict[str, object]:
 def evaluate(request: EvaluateRequest) -> dict[str, object]:
     """Evaluate an answer against retrieved evidence."""
     chunks = {chunk.chunk_id: chunk for chunk in load_chunks_jsonl(Path(request.chunks_path))}
+    missing_chunk_ids = sorted(set(request.retrieved_chunk_ids) - set(chunks))
+    if missing_chunk_ids:
+        raise ValueError(f"Retrieved chunk ids not found: {missing_chunk_ids}")
     results = [
         RetrievalResult(chunk=chunks[chunk_id], score=1.0, rank=index, retrieval_method="manual")
         for index, chunk_id in enumerate(request.retrieved_chunk_ids, start=1)

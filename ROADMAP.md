@@ -39,6 +39,8 @@ The repository includes a working local MVP with:
 - Added environment-backed runtime settings for data, artifact, chunk, trace,
   and model paths.
 - Added API request-size, query-length, text-length, and `top_k` guards.
+- Added structured API errors and clearer CLI exits for missing files,
+  unsupported inputs, and invalid evaluation requests.
 
 ## Known issues and bugs
 
@@ -74,7 +76,7 @@ fixed before the behaviours they affect are relied on.
 
 - [x] Add request-size and payload-size guards to the API surface.
 - [x] Make runtime paths and storage locations configurable through environment settings.
-- Improve error responses and validation messages across API and CLI entrypoints.
+- [x] Improve error responses and validation messages across API and CLI entrypoints.
 - Add better trace summaries, filtering, and inspection views in the dashboard.
 
 ## Milestone 3 — Move beyond in-memory retrieval

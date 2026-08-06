@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import NoReturn
 
 import typer
 from rich.console import Console
@@ -21,34 +22,52 @@ console = Console()
 @app.command()
 def info() -> None:
     """Print validated runtime settings."""
-    settings = RuntimeSettings()
+    settings = RuntimeSettings.from_env()
     console.print(settings.model_dump())
+
+
+def _fail(message: str) -> NoReturn:
+    console.print(f"Error: {message}", style="red")
+    raise typer.Exit(1)
 
 
 @app.command()
 def ingest(
     input_dir: Path,
-    out: Path = Path("data/processed/chunks.jsonl"),
+    out: Path | None = None,
     chunk_size: int = 500,
     overlap: int = 50,
 ) -> None:
     """Ingest documents into chunk JSONL."""
-    chunks = ingest_directory(
-        input_dir,
-        out,
-        config=ChunkingConfig(chunk_size=chunk_size, overlap=overlap),
-    )
-    console.print({"chunks_written": len(chunks), "out": str(out)})
+    settings = RuntimeSettings.from_env()
+    output_path = out or settings.paths.chunk_path
+    if not input_dir.exists():
+        _fail(f"Input directory not found: {input_dir}")
+    if not input_dir.is_dir():
+        _fail(f"Input path is not a directory: {input_dir}")
+    try:
+        chunks = ingest_directory(
+            input_dir,
+            output_path,
+            config=ChunkingConfig(chunk_size=chunk_size, overlap=overlap),
+        )
+    except ValueError as exc:
+        _fail(str(exc))
+    console.print({"chunks_written": len(chunks), "out": str(output_path)})
 
 
 @app.command()
 def ask(
     question: str,
-    chunks: Path = Path("data/processed/chunks.jsonl"),
+    chunks: Path | None = None,
     top_k: int = 3,
 ) -> None:
     """Ask a grounded question over ingested chunks."""
-    chunk_list = load_chunks_jsonl(chunks)
+    settings = RuntimeSettings.from_env()
+    chunks_path = chunks or settings.paths.chunk_path
+    if not chunks_path.exists():
+        _fail(f"Chunks file not found: {chunks_path}")
+    chunk_list = load_chunks_jsonl(chunks_path)
     results = BM25Retriever(chunk_list).search(question, top_k=top_k)
     answer = GenerationService(HeuristicLLMClient()).answer(
         question, results, model_name="heuristic-grounded"
