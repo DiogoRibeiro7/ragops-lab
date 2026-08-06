@@ -13,7 +13,7 @@ The repository includes a working local MVP with:
 - lexical, vector, and hybrid retrieval flows
 - grounded answer generation with citation validation and refusal handling
 - evaluation metrics (context precision/recall, claim-level faithfulness, citation support, answer relevance, refusal correctness) and report export
-- CLI commands for ingestion and question answering
+- CLI commands for ingestion, question answering, indexing, and dataset benchmarks
 - FastAPI endpoints for ingestion, retrieval, answering, evaluation, and trace lookup
 - local trace persistence and a minimal dashboard
 - an analytical notebook suite (retrieval tuning, strategy comparison, grounded generation, end-to-end evaluation) built on package code, committed with executed outputs and figures
@@ -54,6 +54,8 @@ The repository includes a working local MVP with:
   keeping deterministic offline defaults.
 - Added deterministic claim-level faithfulness scoring with cited-evidence
   matching, numeric mismatch checks, and unsupported-claim details.
+- Added a dataset benchmark CLI command with repeated-run summaries and
+  per-run artifacts.
 
 ## Known issues and bugs
 
@@ -106,7 +108,7 @@ fixed before the behaviours they affect are relied on.
   abstractions (the `SentenceTransformerEmbeddingClient` adapter exists but is
   now wired into the CLI and API defaults).
 - [x] Add stronger claim extraction and evidence matching for faithfulness checks.
-- [ ] Add dataset-oriented evaluation commands for repeated benchmark runs.
+- [x] Add dataset-oriented evaluation commands for repeated benchmark runs.
 - [ ] Expand refusal evaluation for unanswerable and weak-context cases.
 
 ## Milestone 5 — Product and deployment polish

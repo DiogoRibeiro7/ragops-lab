@@ -185,12 +185,20 @@ make lint
 make typecheck
 make test
 make rag-eval
+make benchmark
 make notebook-check
 ```
 
 `make rag-eval` runs the deterministic RAG evaluation regression gate against
 the bundled golden set and writes JSON, CSV, and Markdown reports to
 `artifacts/evaluation`.
+
+`make benchmark` runs the same dataset benchmark through the CLI. For repeated
+runs or custom datasets:
+
+```bash
+poetry run ragops-lab benchmark --runs 3 --source-dir data/sample_documents --golden-path data/golden/qa.json --out artifacts/evaluation
+```
 
 `make notebook-check` executes the committed notebooks with `nbval` so notebook
 examples stay aligned with the package code.

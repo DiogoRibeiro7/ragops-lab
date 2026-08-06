@@ -10,7 +10,7 @@ from rich.console import Console
 from rich.table import Table
 
 from .config import RuntimeSettings
-from .evaluation import evaluate_answer
+from .evaluation import evaluate_answer, run_benchmark, write_benchmark_artifacts
 from .generation import GenerationService, build_llm_client
 from .ingestion import ChunkingConfig, ingest_directory, load_chunks_jsonl
 from .retrieval import BM25Retriever, HybridRetriever, LocalVectorIndex, build_embedding_client
@@ -146,6 +146,61 @@ def ask(
     table.add_row("Faithfulness", f"{evaluation.faithfulness:.2f}")
     table.add_row("Citation support", f"{evaluation.citation_support:.2f}")
     console.print(table)
+
+
+@app.command()
+def benchmark(
+    source_dir: Path = Path("data/sample_documents"),
+    golden_path: Path = Path("data/golden/qa.json"),
+    out: Path = Path("artifacts/evaluation"),
+    runs: int = 1,
+    top_k: int = 2,
+    chunk_size: int = 400,
+    overlap: int = 60,
+    min_faithfulness: float = 0.80,
+    min_citation_support: float = 1.00,
+) -> None:
+    """Run a dataset benchmark over a golden QA set."""
+    if not source_dir.exists():
+        _fail(f"Source directory not found: {source_dir}")
+    if not source_dir.is_dir():
+        _fail(f"Source path is not a directory: {source_dir}")
+    if not golden_path.exists():
+        _fail(f"Golden dataset not found: {golden_path}")
+    if runs < 1:
+        _fail("runs must be greater than or equal to 1.")
+    if top_k < 1:
+        _fail("top_k must be greater than or equal to 1.")
+    try:
+        summary, benchmark_runs = run_benchmark(
+            source_dir=source_dir,
+            golden_path=golden_path,
+            output_dir=out,
+            runs=runs,
+            top_k=top_k,
+            chunk_size=chunk_size,
+            overlap=overlap,
+            min_faithfulness=min_faithfulness,
+            min_citation_support=min_citation_support,
+        )
+    except ValueError as exc:
+        _fail(str(exc))
+    write_benchmark_artifacts(summary, benchmark_runs, out)
+
+    table = Table(title="Benchmark Summary")
+    table.add_column("Metric")
+    table.add_column("Value")
+    table.add_row("Runs", str(summary.run_count))
+    table.add_row("Cases per run", str(summary.case_count))
+    table.add_row("Recall@k", f"{summary.average_recall_at_k:.2f}")
+    table.add_row("MRR", f"{summary.mean_reciprocal_rank:.2f}")
+    table.add_row("Faithfulness", f"{summary.average_faithfulness:.2f}")
+    table.add_row("Citation support", f"{summary.average_citation_support:.2f}")
+    table.add_row("Status", "passed" if summary.passed else "failed")
+    table.add_row("Artifacts", str(out))
+    console.print(table)
+    if not summary.passed:
+        raise typer.Exit(1)
 
 
 if __name__ == "__main__":

@@ -26,6 +26,8 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
   and vector indexing, with deterministic offline defaults preserved.
 - Added claim-level faithfulness scoring with cited-evidence matching,
   unsupported-claim details, and stricter numeric mismatch detection.
+- Added a reusable dataset benchmark runner, repeated-run benchmark artifacts,
+  and a `ragops-lab benchmark` CLI command.
 
 ## [0.1.4] - 2026-08-05
 

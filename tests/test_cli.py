@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from pytest import MonkeyPatch
@@ -129,3 +130,33 @@ def test_cli_index_reports_embedding_provider_errors(
 
     assert result.exit_code == 1
     assert "embedding provider is unavailable" in result.output
+
+
+def test_cli_runs_dataset_benchmark(tmp_path: Path) -> None:
+    runner = CliRunner()
+    output_dir = tmp_path / "benchmark"
+
+    result = runner.invoke(
+        app,
+        [
+            "benchmark",
+            "--source-dir",
+            "data/sample_documents",
+            "--golden-path",
+            "data/golden/qa.json",
+            "--out",
+            str(output_dir),
+            "--runs",
+            "2",
+        ],
+    )
+
+    summary = json.loads((output_dir / "benchmark-summary.json").read_text(encoding="utf-8"))
+
+    assert result.exit_code == 0
+    assert "Benchmark Summary" in result.output
+    assert summary["run_count"] == 2
+    assert summary["passed"] is True
+    assert (output_dir / "benchmark-runs.csv").exists()
+    assert (output_dir / "run-001" / "cases.json").exists()
+    assert (output_dir / "run-002" / "summary.md").exists()
