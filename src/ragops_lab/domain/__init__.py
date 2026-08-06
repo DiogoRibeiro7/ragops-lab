@@ -3,7 +3,7 @@
 from .answer import GeneratedAnswer
 from .chunk import DocumentChunk
 from .document import Document
-from .evaluation import EvaluationResult
+from .evaluation import ClaimSupportResult, EvaluationResult
 from .retrieval import RetrievalResult
 from .trace import RagTrace, RagTraceSummary
 
@@ -13,6 +13,7 @@ __all__ = [
     "RetrievalResult",
     "GeneratedAnswer",
     "EvaluationResult",
+    "ClaimSupportResult",
     "RagTrace",
     "RagTraceSummary",
 ]

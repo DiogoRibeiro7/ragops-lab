@@ -25,7 +25,7 @@ This project is built to demonstrate practical AI engineering, not just prompt w
 - Ingests `.txt`, `.md`, `.csv`, and optionally `.pdf` documents into reusable chunks.
 - Supports lexical, vector, and hybrid retrieval through package APIs.
 - Generates evidence-grounded answers with citation validation.
-- Evaluates context precision, context recall, faithfulness, citation support, unsupported claims, and refusal correctness.
+- Evaluates context precision, context recall, claim-level faithfulness, citation support, unsupported claims, and refusal correctness.
 - Stores RAG traces with latency and token estimates.
 - Exposes the workflow through both a CLI and a FastAPI service.
 - Includes prompt regression coverage and an analytical notebook suite (see below).
@@ -250,4 +250,4 @@ See [`CONTRIBUTING.md`](CONTRIBUTING.md) for contribution guidelines and [`SECUR
 
 ## Portfolio signal
 
-This repo shows operational depth around RAG systems: retrieval baselines, grounded generation, regression testing, evaluation exports, and traceable service behavior rather than a thin demo wrapper around an LLM call.
+This repo shows operational depth around RAG systems: retrieval baselines, grounded generation, claim-level evaluation, regression testing, evaluation exports, and traceable service behavior rather than a thin demo wrapper around an LLM call.

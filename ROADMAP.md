@@ -12,7 +12,7 @@ The repository includes a working local MVP with:
 - reusable ingestion for text, markdown, csv, and optional pdf adapters
 - lexical, vector, and hybrid retrieval flows
 - grounded answer generation with citation validation and refusal handling
-- evaluation metrics (context precision/recall, faithfulness, citation support, answer relevance, refusal correctness) and report export
+- evaluation metrics (context precision/recall, claim-level faithfulness, citation support, answer relevance, refusal correctness) and report export
 - CLI commands for ingestion and question answering
 - FastAPI endpoints for ingestion, retrieval, answering, evaluation, and trace lookup
 - local trace persistence and a minimal dashboard
@@ -52,6 +52,8 @@ The repository includes a working local MVP with:
   and hybrid weights.
 - Wired configurable LLM and embedding providers into the CLI and API while
   keeping deterministic offline defaults.
+- Added deterministic claim-level faithfulness scoring with cited-evidence
+  matching, numeric mismatch checks, and unsupported-claim details.
 
 ## Known issues and bugs
 
@@ -67,10 +69,11 @@ fixed before the behaviours they affect are relied on.
   safe to use as a quality gate (only as a trend signal). *Fix:* add a
   model-based or embedding-based relevance judge behind the existing
   `RelevanceJudge` protocol.
-- **Faithfulness uses lexical subset matching.** `unsupported_claim_count`
-  flags a claim as unsupported unless its tokens are a strict subset of the
-  evidence tokens, which is brittle to paraphrase and stopwords. *Fix:* move to
-  claim-level entailment via embeddings or an LLM judge.
+- **Faithfulness still uses lexical matching.** Claim support is now scored at
+  claim level against cited evidence with stopword filtering, light stemming,
+  and strict number matching. It is stronger than subset matching, but it is
+  still not semantic entailment. *Fix:* add an embedding or LLM judge behind the
+  existing `ClaimSupportJudge` protocol.
 
 ## Milestone 1 — Complete the evaluation pipeline
 
@@ -102,7 +105,7 @@ fixed before the behaviours they affect are relied on.
 - [x] Add provider-backed LLM and embedding integrations behind the existing
   abstractions (the `SentenceTransformerEmbeddingClient` adapter exists but is
   now wired into the CLI and API defaults).
-- [ ] Add stronger claim extraction and evidence matching for faithfulness checks.
+- [x] Add stronger claim extraction and evidence matching for faithfulness checks.
 - [ ] Add dataset-oriented evaluation commands for repeated benchmark runs.
 - [ ] Expand refusal evaluation for unanswerable and weak-context cases.
 
